@@ -1,0 +1,5 @@
+description: My spi device binding
+
+compatible: "zephyr,foo"
+
+include: spi-device.yaml

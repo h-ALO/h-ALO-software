@@ -1,0 +1,27 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  An example sensor that reads the GPIO level defined in input-gpios. The
+  purpose of this sensor is to demonstrate how to create out-of-tree drivers.
+
+  Example definition in devicetree:
+
+    examplesensor {
+        compatible = "zephyr,examplesensor";
+        label = "EXAMPLESENSOR";
+        input-gpios = <&gpio0 0 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    };
+
+compatible: "zephyr,examplesensor"
+
+include: [base.yaml, spi-device.yaml]
+
+properties:
+    irq-gpios:
+      required: true
+      type: phandle-array
+      description: IRQ pin
+        The bIRQ/MDAT pin from the device, which is active low, configurable to
+        either driven or high-Z in inactive state.  This has DRDY, POR, CRCCFG,
+        and STP interrupts.

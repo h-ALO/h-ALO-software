@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2021 Nordic Semiconductor ASA
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* This devicetree overlay file will be automatically picked by the Zephyr
+ * build system when building the sample for the nucleo_f302r8 board. It shows
+ * how the example-application can be built on sample boards already provided
+ * by Zephyr.
+ */
+
+/ {
+
+};
+
+&gpioc {
+	status = "okay";
+};
+
+// https://os.mbed.com/platforms/ST-Nucleo-WB55RG/
+// https://github.com/zephyrproject-rtos/zephyr/blob/main/boards/arm/nucleo_wb55rg/nucleo_wb55rg.dts
+// ADC pin CSK ---orange--- (PA5,D13,20,SCK)
+// ADC pin SDO ---yellow--- (PA6,D12,21,MISO)
+// ADC pin SDI ---green---- (PA7,D11,22,MOSI)
+// ADC pin CS  ---white---- (PA4,D10)
+// ADC pin INT ---blue----- (PC13,D7)
+// https://github.com/zephyrproject-rtos/zephyr-testing/blob/0f09360456592ecf0d0413352dc1ef5d23cd0364/include/drivers/spi.h#L252
+// https://github.com/zephyrproject-rtos/zephyr-testing/blob/2fc0ace3c2462cb33dc8c25e33c629cedba08ebb/boards/arm/rm1xx_dvk/rm1xx_dvk.dts#L60
+// https://github.com/zephyrproject-rtos/zephyr/blob/ee91cd5665b1590c9a8a9a992bb19d81feeeb461/boards/arm/bt610/bt610.dts#L268
+
+
+&spi1 {
+    status = "okay";
+    pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pa5 &spi1_miso_pa6 &spi1_mosi_pa7>;
+    cs-gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
+	examplesensor0: examplesensor@0 {
+		compatible = "zephyr,examplesensor";
+		spi-max-frequency = <2000000>;
+        irq-gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+		reg = <0>;
+	};
+};
