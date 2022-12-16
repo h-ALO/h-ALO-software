@@ -41,7 +41,7 @@ that by running:
 
 ```shell
 # initialize my-workspace for the example-application (main branch)
-west init -m https://github.com/KenthJohan/tiabtsw --mr main my-workspace
+west init -m https://github.com/h-ALO/h-ALO-zephyr-app --mr main workspace_h-ALO-zephyr-app
 # update Zephyr modules
 cd my-workspace
 west update
