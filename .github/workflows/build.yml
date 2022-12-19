@@ -12,23 +12,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          path: example-application
+          path: app
 
       - name: Initialize
-        working-directory: example-application
+        working-directory: app
         run: |
-          pip3 install -U west
           west init -l .
           west update
-          pip3 install -r ../zephyr/scripts/requirements-base.txt
 
       - name: Build firmware
-        working-directory: example-application
+        working-directory: app
         run: |
           west build -b custom_plank app
+
+      - name: Twister Unit Tests
+        working-directory: app
+        run: |
+          ../zephyr/scripts/twister -p qemu_cortex_m0 --testcase-root ./tests/
 
       - name: Archive firmware
         uses: actions/upload-artifact@v2
         with:
           name: firmware
-          path: example-application/build/zephyr/zephyr.*
+          path: app/build/zephyr/zephyr.*
