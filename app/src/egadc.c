@@ -86,7 +86,7 @@ static void drdy_callback(const struct device *port, struct gpio_callback *cb, g
 
 static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 {
-	LOG_INF("mcp356x_acquisition_thread started!", 0);
+	LOG_INF("mcp356x_acquisition_thread started!");
 	while (true)
 	{
 		int err = 0;
@@ -124,7 +124,7 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 
 int egadc_init(struct mcp356x_config * config)
 {
-	LOG_INF("Init ADC MCP356X", 0);
+	LOG_INF("Init ADC MCP356X");
 
 
 
@@ -220,7 +220,7 @@ int egadc_init(struct mcp356x_config * config)
 	/* Add instance number to thread name? */
 	k_thread_name_set(&config->thread, "mcp356x");
 
-
+	return 0;
 }
 
 

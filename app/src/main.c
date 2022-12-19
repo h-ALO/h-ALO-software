@@ -63,7 +63,7 @@ void main(void)
 {
 	LOG_INF("Zephyr Example Application %s", "" DT_NODE_PATH(DT_NODELABEL(examplesensor0)));
 
-	if (!spi_is_ready(&c.bus))
+	if (!spi_is_ready_dt(&c.bus))
 	{
 		LOG_ERR("SPI bus is not ready %i", 0);
 		return;
@@ -82,11 +82,11 @@ void main(void)
 		//printk("%08X\n", c.lastdata);
 		
 		
-		printk("%8i\n", c.num_irq - c.num_drdy);
-		printk("%8i %8i " MCP356X_PRINTF_HEADER "\n", c.num_irq, c.num_drdy);
-		printk("avg               " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.avg));
-		printk("mv                " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.mv));
-		printk("n                 " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
+		printk("%8i %8i\n", c.num_irq, c.num_drdy);
+		printk("    " MCP356X_PRINTF_HEADER "\n");
+		printk("avg " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.avg));
+		printk("mv  " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.mv));
+		printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
 		
 		
 		//mybt_progress();
