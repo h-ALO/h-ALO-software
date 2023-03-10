@@ -274,7 +274,14 @@ for conversion start pulse
 #define MCP356X_IRQ_STP_EN                   0x01
 #define MCP356X_IRQ_STP_DIS                  0x00
 
-
+#define MCP356X_IRQ_MASK_EN_STP        0x01
+#define MCP356X_IRQ_MASK_EN_FASTCMD    0x02
+#define MCP356X_IRQ_MASK_MODE0         0x04
+#define MCP356X_IRQ_MASK_MODE1         0x08
+#define MCP356X_IRQ_MASK_POR_STATUS    0x10
+#define MCP356X_IRQ_MASK_CRCCFG_STATUS 0x20
+#define MCP356X_IRQ_MASK_DR_STATUS     0x40
+#define MCP356X_IRQ_MASK_UNIMPLEMENTED 0x80
 
 
 

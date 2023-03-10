@@ -24,6 +24,12 @@ char const * MCP356X_REG_tostring(int a)
 	}
 }
 
+
+
+
+
+
+
 /*
 111 = Gain is x64 (x16 analog, x4 digital)
 110 = Gain is x32 (x16 analog, x2 digital)

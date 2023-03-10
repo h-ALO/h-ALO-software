@@ -64,6 +64,17 @@ static int set(const struct spi_dt_spec *bus, uint8_t reg, uint32_t value)
 	uint32_t value2;
 	rv = get(bus, reg, &value2);
 	LOG_INF("Register set: %s: %08x %08x", MCP356X_REG_tostring(reg), value, value2);
+	if(reg == MCP356X_REG_IRQ)
+	{
+		LOG_INF("EN_STP:        %i", !!(value2 & MCP356X_IRQ_MASK_EN_STP));
+		LOG_INF("EN_FASTCMD:    %i", !!(value2 & MCP356X_IRQ_MASK_EN_FASTCMD));
+		LOG_INF("MODE0:         %i", !!(value2 & MCP356X_IRQ_MASK_MODE0));
+		LOG_INF("MODE1:         %i", !!(value2 & MCP356X_IRQ_MASK_MODE1));
+		LOG_INF("POR_STATUS:    %i", !!(value2 & MCP356X_IRQ_MASK_POR_STATUS));
+		LOG_INF("CRCCFG_STATUS: %i", !!(value2 & MCP356X_IRQ_MASK_CRCCFG_STATUS));
+		LOG_INF("DR_STATUS:     %i", !!(value2 & MCP356X_IRQ_MASK_DR_STATUS));
+		LOG_INF("UNIMPLEMENTED: %i", !!(value2 & MCP356X_IRQ_MASK_UNIMPLEMENTED));
+	}
 #endif
 return rv;
 }
@@ -164,9 +175,10 @@ int egadc_init(struct mcp356x_config * config)
 	//MCP356X_MUX_VIN_POS_CH3 | 
 	//MCP356X_MUX_VIN_POS_TEMP |
 	//MCP356X_MUX_VIN_POS_AVDD | 
-	MCP356X_MUX_VIN_POS_VREF_EXT_PLUS|
+	//MCP356X_MUX_VIN_POS_VREF_EXT_PLUS|
 	//MCP356X_MUX_VIN_NEG_CH1 |
 	//MCP356X_MUX_VIN_POS_CH0 | 
+	MCP356X_MUX_VIN_POS_CH5 | 
 	MCP356X_MUX_VIN_NEG_AGND |
 	0);
 	set(&config->bus, MCP356X_REG_SCAN, 0);

@@ -81,12 +81,14 @@ void main(void)
 	{
 		//printk("%08X\n", c.lastdata);
 		
-		
+		/*
 		printk("%8i %8i\n", c.num_irq, c.num_drdy);
 		printk("    " MCP356X_PRINTF_HEADER "\n");
 		printk("avg " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.avg));
 		printk("mv  " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.mv));
 		printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
+		*/
+		printk("%8i\n", c.avg[MCP356X_CH_CH0]);
 		
 		
 		//mybt_progress();
