@@ -70,6 +70,7 @@ void main(void)
 	}
 	
 	
+	c.is_scan = false;
 	c.gain_reg = MCP356X_CFG_2_GAIN_X_033;
 	c.vref_mv = TIABT_VREF;
 	egadc_init(&c);
@@ -81,21 +82,23 @@ void main(void)
 	{
 		//printk("%08X\n", c.lastdata);
 		
-		/*
-		printk("%8i %8i\n", c.num_irq, c.num_drdy);
-		printk("    " MCP356X_PRINTF_HEADER "\n");
-		printk("avg " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.avg));
-		printk("mv  " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.mv));
-		printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
-		*/
-		printk("%8i\n", c.avg[MCP356X_CH_CH0]);
+		
+		//printk("%8i %8i\n", c.num_irq, c.num_drdy);
+		//printk("    " MCP356X_PRINTF_HEADER "\n");
+		//printk("avg " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.avg));
+		//printk("min " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.val_min));
+		//printk("max " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.val_max));
+		//printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
+		
+		//egadc_log_REG_IRQ(&c.bus, MCP356X_REG_IRQ);
+		printk("%8i %8i: %8i\n", c.num_irq, c.num_drdy, c.avg[MCP356X_CH_CH0]);
 		
 		
 		//mybt_progress();
 		//bt_bas_set_battery_level(i++);
 
 		//k_sem_give(&c.acq_sem);
-		k_sleep(K_MSEC(5000));
+		k_sleep(K_MSEC(1000));
 	}
 }
 

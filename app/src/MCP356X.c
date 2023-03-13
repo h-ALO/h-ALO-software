@@ -69,7 +69,7 @@ void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * value, uint32_t * chann
 	MUX[7:0] selection. This format is useful for 32-bit
 	MCU applications
 	*/
-	(*channel) = (rx[1] >> 4) & 0x01;
+	(*channel) = (rx[1] >> 4) & 0x0F;
 
 	uint8_t sign = rx[1] & 0x01;
 	(*value) = (rx[2] << 16) | (rx[3] << 8) | (rx[4] << 0);
@@ -157,3 +157,6 @@ void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value)
 		break;
 	}
 }
+
+
+

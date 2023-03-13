@@ -366,15 +366,40 @@ input channel selection is defined by the MUX[7:0] bits.
 #define MCP356X_SCAN_CH1                     0x00000002
 #define MCP356X_SCAN_CH0                     0x00000001
 
+
+/*
+5.14.3.4 VCM Reading (V CM )
+During the conversion that reads VCM , the device
+monitors the internal Common-mode voltage of the
+device in order to ensure proper operation.
+The VCM voltage of the device should be located at
+1.2V ± 2% to ensure proper accuracy. With this setting,
+the internal multiplexer setting becomes 0xF8
+(VCM – AGND). In order to properly measure VCM , the
+reference voltage must be larger than 1.2V.
+During the VCM reading, the gain of the ADC is set to 1x
+regardless of the GAIN[2:0] settings. This temporary inter-
+nal configuration does not change the register setting, it
+impacts the gain of the device during this conversion.
+The VCM reading is susceptible to the gain and offset
+errors of the ADC, which should be calibrated to obtain
+a precise internal Common-mode measurement.
+
+Differential Channel D (CH6-CH7) 1011 0x67 None
+10 Differential Channel C (CH4-CH5) 1010 0x45 None
+9 Differential Channel B (CH2-CH3) 1001 0x23 None
+8 Differential Channel A (CH0-CH1)
+*/
+
 #define MCP356X_CHANNEL_COUNT 16
 #define MCP356X_CH_OFFSET   15
-#define MCP356X_CH_VREF     14
+#define MCP356X_CH_VCM     14
 #define MCP356X_CH_AVDD     13
 #define MCP356X_CH_TEMP     12
-#define MCP356X_CH_DIFF_D   11
-#define MCP356X_CH_DIFF_C   10
-#define MCP356X_CH_DIFF_B   9
-#define MCP356X_CH_DIFF_A   8
+#define MCP356X_CH_DIFF_D   11 // Differential Channel D (CH6-CH7)
+#define MCP356X_CH_DIFF_C   10 // Differential Channel C (CH4-CH5)
+#define MCP356X_CH_DIFF_B   9 // Differential Channel B (CH2-CH3)
+#define MCP356X_CH_DIFF_A   8 // Differential Channel A (CH0-CH1)
 #define MCP356X_CH_CH7      7
 #define MCP356X_CH_CH6      6
 #define MCP356X_CH_CH5      5
@@ -421,12 +446,12 @@ input channel selection is defined by the MUX[7:0] bits.
 #define MCP356X_CALC_COEF                    8388608
 
 
-#define MCP356X_PRINTF_HEADER "OFFST VREF  AVDD  TEMP  DIFFD DIFFC DIFFB DIFFA CH7   CH6   CH5   CH4   CH3   CH2   CH1   CH0"
+#define MCP356X_PRINTF_HEADER "OFFST VCM   AVDD  TEMP  DIFFD DIFFC DIFFB DIFFA CH7   CH6   CH5   CH4   CH3   CH2   CH1   CH0"
 #define MCP356X_PRINTF_PLUS   "%+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i %+05i"
 #define MCP356X_PRINTF "%05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i %05i"
 #define MCP356X_ARGS(x) \
 (x)[MCP356X_CH_OFFSET],  \
-(x)[MCP356X_CH_VREF],  \
+(x)[MCP356X_CH_VCM],  \
 (x)[MCP356X_CH_AVDD],  \
 (x)[MCP356X_CH_TEMP],  \
 (x)[MCP356X_CH_DIFF_D],  \
@@ -450,3 +475,6 @@ void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * value, uint32_t * chann
 uint32_t MCP356X_get_len(uint8_t reg);
 uint32_t MCP356X_get_value(uint8_t rx[5], uint8_t len);
 void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value);
+
+
+

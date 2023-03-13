@@ -20,6 +20,9 @@ struct mcp356x_config
 	int mv[MCP356X_CHANNEL_COUNT];
 	int sum[MCP356X_CHANNEL_COUNT];
 	int avg[MCP356X_CHANNEL_COUNT];
+	int val_min[MCP356X_CHANNEL_COUNT];
+	int val_max[MCP356X_CHANNEL_COUNT];
+	int is_scan;
 	uint8_t gain_reg; /* Gain register value */
 	uint16_t vref_mv; /* Voltage reference millivolt value */
 	K_KERNEL_STACK_MEMBER(stack, ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE);
@@ -27,3 +30,4 @@ struct mcp356x_config
 
 
 int egadc_init(struct mcp356x_config * config);
+int egadc_log_REG_IRQ(const struct spi_dt_spec *bus, uint8_t reg);

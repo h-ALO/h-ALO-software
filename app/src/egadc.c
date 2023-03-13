@@ -1,16 +1,27 @@
 #include "egadc.h"
 
-#include "MCP356X.h"
-
 #include <zephyr/drivers/spi.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
 
 
+#include "MCP356X.h"
+
+
 LOG_MODULE_REGISTER(adc_mcp356x, LOG_LEVEL_DBG);
 
 
-
+void MCP356X_log_REG_IRQ(uint32_t value)
+{
+	LOG_INF("EN_STP:        %i", !!(value & MCP356X_IRQ_MASK_EN_STP));
+	LOG_INF("EN_FASTCMD:    %i", !!(value & MCP356X_IRQ_MASK_EN_FASTCMD));
+	LOG_INF("MODE0:         %i", !!(value & MCP356X_IRQ_MASK_MODE0));
+	LOG_INF("MODE1:         %i", !!(value & MCP356X_IRQ_MASK_MODE1));
+	LOG_INF("POR_STATUS:    %i", !!(value & MCP356X_IRQ_MASK_POR_STATUS));
+	LOG_INF("CRCCFG_STATUS: %i", !!(value & MCP356X_IRQ_MASK_CRCCFG_STATUS));
+	LOG_INF("DR_STATUS:     %i", !!(value & MCP356X_IRQ_MASK_DR_STATUS));
+	LOG_INF("UNIMPLEMENTED: %i", !!(value & MCP356X_IRQ_MASK_UNIMPLEMENTED));
+}
 
 int transceive(const struct spi_dt_spec *bus, uint8_t *tx, uint8_t *rx, uint8_t reg, uint8_t len, uint8_t cmd)
 {
@@ -52,6 +63,24 @@ int get_data_11(const struct spi_dt_spec *bus, int32_t * value, uint32_t * chann
 
 
 
+
+
+
+
+int egadc_log_REG_IRQ(const struct spi_dt_spec *bus, uint8_t reg)
+{
+	uint32_t value;
+	int rv = get(bus, reg, &value);
+	if(reg == MCP356X_REG_IRQ)
+	{
+		MCP356X_log_REG_IRQ(value);
+	}
+	return rv;
+}
+
+
+
+
 #define MCP356X_LOG_SET_VALUE
 static int set(const struct spi_dt_spec *bus, uint8_t reg, uint32_t value)
 {
@@ -66,14 +95,7 @@ static int set(const struct spi_dt_spec *bus, uint8_t reg, uint32_t value)
 	LOG_INF("Register set: %s: %08x %08x", MCP356X_REG_tostring(reg), value, value2);
 	if(reg == MCP356X_REG_IRQ)
 	{
-		LOG_INF("EN_STP:        %i", !!(value2 & MCP356X_IRQ_MASK_EN_STP));
-		LOG_INF("EN_FASTCMD:    %i", !!(value2 & MCP356X_IRQ_MASK_EN_FASTCMD));
-		LOG_INF("MODE0:         %i", !!(value2 & MCP356X_IRQ_MASK_MODE0));
-		LOG_INF("MODE1:         %i", !!(value2 & MCP356X_IRQ_MASK_MODE1));
-		LOG_INF("POR_STATUS:    %i", !!(value2 & MCP356X_IRQ_MASK_POR_STATUS));
-		LOG_INF("CRCCFG_STATUS: %i", !!(value2 & MCP356X_IRQ_MASK_CRCCFG_STATUS));
-		LOG_INF("DR_STATUS:     %i", !!(value2 & MCP356X_IRQ_MASK_DR_STATUS));
-		LOG_INF("UNIMPLEMENTED: %i", !!(value2 & MCP356X_IRQ_MASK_UNIMPLEMENTED));
+		MCP356X_log_REG_IRQ(value2);
 	}
 #endif
 return rv;
@@ -102,7 +124,14 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 	{
 		int err = 0;
 		//k_sem_take(&config->acq_sem, K_FOREVER);
-		k_sem_take(&config->drdy_sem, K_SECONDS(12));
+		int rv = k_sem_take(&config->drdy_sem, K_SECONDS(12));
+		if(rv != 0)
+		{
+			// TODO: Restart
+			continue;
+		}
+		
+		config->num_drdy++;
 		int32_t value = 0;
 		uint32_t channel = 0;
 		err = get_data_11(&config->bus, &value, &channel);
@@ -111,21 +140,57 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 			printk("mcp356x_acquisition_thread error: %i\n", err);
 			continue;
 		}
-		if (channel < MCP356X_CHANNEL_COUNT)
+
+		// Protect array bounds
+		if (channel >= MCP356X_CHANNEL_COUNT){continue;}
+		
+
+
+		config->n[channel]++;
+		int32_t gain_reg = config->gain_reg;
+
+		// Only works for SCAN mode
+		if(config->is_scan)
 		{
-			config->n[channel]++;
-			config->mv[channel] = MCP356X_raw_to_millivolt(value, config->vref_mv, config->gain_reg);
-			config->sum[channel] += config->mv[channel];
+			switch (channel)
+			{
+			case MCP356X_CH_OFFSET  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_VCM     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_AVDD    : gain_reg = MCP356X_CFG_2_GAIN_X_033; break;
+			case MCP356X_CH_TEMP    : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_D  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_C  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_B  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_A  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH7     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH6     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH5     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH4     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH3     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH2     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH1     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH0     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			default:
+				break;
+			}
 		}
 
+		config->mv[channel] = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
+		config->sum[channel] += config->mv[channel];
+		
+		config->val_max[channel] = MAX(config->val_max[channel], config->mv[channel]);
+		config->val_min[channel] = MIN(config->val_min[channel], config->mv[channel]);
+		
 		// After 1000 samples then calculate average:
 		if(config->n[channel] > 1000)
 		{
 			config->avg[channel] = config->sum[channel] / config->n[channel];
 			config->n[channel] = 0;
 			config->sum[channel] = 0;
+			config->val_min[channel] = INT32_MAX;
+			config->val_max[channel] = INT32_MIN;
+
 		}
-		config->num_drdy++;
 	}
 }
 
@@ -138,7 +203,7 @@ int egadc_init(struct mcp356x_config * config)
 	LOG_INF("Init ADC MCP356X");
 
 
-
+	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,
 	MCP356X_CFG_0_VREF_SEL_0 |
 	MCP356X_CFG_0_CLK_SEL_2 |
@@ -168,8 +233,9 @@ int egadc_init(struct mcp356x_config * config)
 	MCP356X_CFG_3_CRC_OFF_CAL_EN |
 	MCP356X_CFG_3_CRC_GAIN_CAL_EN
 	);
+	
 	set(&config->bus, MCP356X_REG_MUX,
-	//MCP356X_MUX_VIN_POS_CH0 | 
+	MCP356X_MUX_VIN_POS_CH0 | 
 	//MCP356X_MUX_VIN_POS_CH1 | 
 	//MCP356X_MUX_VIN_POS_CH2 | 
 	//MCP356X_MUX_VIN_POS_CH3 | 
@@ -178,26 +244,27 @@ int egadc_init(struct mcp356x_config * config)
 	//MCP356X_MUX_VIN_POS_VREF_EXT_PLUS|
 	//MCP356X_MUX_VIN_NEG_CH1 |
 	//MCP356X_MUX_VIN_POS_CH0 | 
-	MCP356X_MUX_VIN_POS_CH5 | 
+	//MCP356X_MUX_VIN_POS_CH5 | 
 	MCP356X_MUX_VIN_NEG_AGND |
 	0);
-	set(&config->bus, MCP356X_REG_SCAN, 0);
-	/*
-	set24_verbose(&config->bus, MCP356X_REG_SCAN, 
-	MCP356X_SCAN_CH0|
-	MCP356X_SCAN_CH1|
-	MCP356X_SCAN_CH2|
-	MCP356X_SCAN_CH3|
-	MCP356X_SCAN_CH4|
-	MCP356X_SCAN_CH5|
-	MCP356X_SCAN_CH6|
-	MCP356X_SCAN_CH7|
-	MCP356X_SCAN_VREF|
-	MCP356X_SCAN_TEMP|
-	MCP356X_SCAN_AVDD|
-	MCP356X_SCAN_OFFSET|
+	
+	//set(&config->bus, MCP356X_REG_SCAN, 0);
+	
+	set(&config->bus, MCP356X_REG_SCAN, 
+	//MCP356X_SCAN_CH0|
+	//MCP356X_SCAN_CH1|
+	//MCP356X_SCAN_CH2|
+	//MCP356X_SCAN_CH3|
+	//MCP356X_SCAN_CH4|
+	//MCP356X_SCAN_CH5|
+	//MCP356X_SCAN_CH6|
+	//MCP356X_SCAN_CH7|
+	//MCP356X_SCAN_VREF|
+	//MCP356X_SCAN_TEMP|
+	//MCP356X_SCAN_AVDD|
+	//MCP356X_SCAN_OFFSET|
 	0);
-	*/
+	
 	//set24_verbose(bus, MCP356X_REG_SCAN, MCP356X_SCAN_CH0);
 	//set24_verbose(bus, MCP356X_REG_SCAN, MCP356X_SCAN_CH3);
 	
@@ -206,6 +273,26 @@ int egadc_init(struct mcp356x_config * config)
 	set(&config->bus, MCP356X_REG_GAIN_CAL, 0x00800000);
 	//set24_verbose(MCP356X_RSV_REG_W_A, 0x00900F00);
 	set(&config->bus, MCP356X_RSV_REG_W_A, 0x00900000);
+
+
+
+	{
+		//uint32_t reg = MCP356X_REG_LOCK;
+		//set(&config->bus, reg, 0x00);
+	}
+	{
+		uint32_t value;
+		uint32_t reg = MCP356X_REG_LOCK;
+		int rv = get(&config->bus, reg, &value);
+		LOG_INF("%s: %08x", MCP356X_REG_tostring(reg), value);
+	}
+	{
+		uint32_t value;
+		uint32_t reg = MCP356X_REG_CRC_CFG;
+		int rv = get(&config->bus, reg, &value);
+		LOG_INF("%s: %08x", MCP356X_REG_tostring(reg), value);
+	}
+
 
 
 
