@@ -60,22 +60,29 @@ int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, int32_t gain_reg)
 	return mv;
 }
 
-
-void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * value, uint32_t * channel)
+/*
+In DATA_FORMAT[1:0] = 11, the output code is similar
+to the one in DATA_FORMAT[1:0] = 10. The only differ-
+ence resides in the four MSbs of the first byte, which
+are no longer repeats of the Sign bit (SGN). They are
+the Channel ID data (CH_ID[3:0]) that are defined in
+Table 5-14. This CH_ID[3:0] word can be used to verify
+that the right channel has been converted to SCAN
+mode and can serve easy data retrieval and logging
+(see Section 5.14 “SCAN Mode” for more details
+about the SCAN mode). In MUX mode, this 4-bit word
+is defaulted to ‘0000’ and does not vary with the
+MUX[7:0] selection. This format is useful for 32-bit
+MCU applications.
+*/
+void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * out_value, uint8_t * out_channel)
 {
-	/*
-	In MUX mode, this 4-bit word
-	is defaulted to ‘0000’ and does not vary with the
-	MUX[7:0] selection. This format is useful for 32-bit
-	MCU applications
-	*/
-	(*channel) = (rx[1] >> 4) & 0x0F;
-
+	(*out_channel) = (rx[1] >> 4) & 0x0F;
 	uint8_t sign = rx[1] & 0x01;
-	(*value) = (rx[2] << 16) | (rx[3] << 8) | (rx[4] << 0);
+	(*out_value) = (rx[2] << 16) | (rx[3] << 8) | (rx[4] << 0);
 	if (sign != 0)
 	{
-		(*value) -= 16777215;
+		(*out_value) -= 16777215;
 	}
 }
 

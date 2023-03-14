@@ -50,14 +50,14 @@ int get(const struct spi_dt_spec *bus, uint8_t reg, uint32_t * value)
 /*
 In MUX mode, channel is defaulted to 0.
 */
-int get_data_11(const struct spi_dt_spec *bus, int32_t * value, uint32_t * channel)
+int get_data_11(const struct spi_dt_spec *bus, int32_t * out_value, uint8_t * out_channel)
 {
 	uint8_t reg = MCP356X_REG_ADC_DATA;
 	uint8_t len = 4;
 	uint8_t tx[5] = {0};
 	uint8_t rx[5] = {0};
 	int rv = transceive(bus, tx, rx, reg, len, MCP356X_CMD_INC_READ);
-	MCP356X_ADC_DATA_decode_11(rx, value, channel);
+	MCP356X_ADC_DATA_decode_11(rx, out_value, out_channel);
 	return rv;
 }
 
@@ -107,102 +107,39 @@ return rv;
 static void drdy_callback(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins)
 {
 	struct mcp356x_config *config = CONTAINER_OF(cb, struct mcp356x_config, drdy_cb);
+	//TODO: Why is num_irq inside drdy_callback much higher than num_drdy inside mcp356x_acquisition_thread?
 	config->num_irq++;
 	k_sem_give(&config->drdy_sem);
-	//struct mcp356x_data11 data;
-	//mcp356x_data11_get(&config->bus, &data);
 }
 
 
 
 
 
-static void mcp356x_acquisition_thread(struct mcp356x_config * config)
+
+
+
+
+
+
+void tryhard_reg_irq(const struct spi_dt_spec *bus)
 {
-	LOG_INF("mcp356x_acquisition_thread started!");
-	while (true)
+	while(1)
 	{
-		int err = 0;
-		//k_sem_take(&config->acq_sem, K_FOREVER);
-		int rv = k_sem_take(&config->drdy_sem, K_SECONDS(12));
-		if(rv != 0)
-		{
-			// TODO: Restart
-			continue;
-		}
-		
-		config->num_drdy++;
-		int32_t value = 0;
-		uint32_t channel = 0;
-		err = get_data_11(&config->bus, &value, &channel);
-		if (err)
-		{
-			printk("mcp356x_acquisition_thread error: %i\n", err);
-			continue;
-		}
-
-		// Protect array bounds
-		if (channel >= MCP356X_CHANNEL_COUNT){continue;}
-		
-
-
-		config->n[channel]++;
-		int32_t gain_reg = config->gain_reg;
-
-		// Only works for SCAN mode
-		if(config->is_scan)
-		{
-			switch (channel)
-			{
-			case MCP356X_CH_OFFSET  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_VCM     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_AVDD    : gain_reg = MCP356X_CFG_2_GAIN_X_033; break;
-			case MCP356X_CH_TEMP    : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_D  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_C  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_B  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_A  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH7     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH6     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH5     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH4     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH3     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH2     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH1     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH0     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			default:
-				break;
-			}
-		}
-
-		config->mv[channel] = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
-		config->sum[channel] += config->mv[channel];
-		
-		config->val_max[channel] = MAX(config->val_max[channel], config->mv[channel]);
-		config->val_min[channel] = MIN(config->val_min[channel], config->mv[channel]);
-		
-		// After 1000 samples then calculate average:
-		if(config->n[channel] > 1000)
-		{
-			config->avg[channel] = config->sum[channel] / config->n[channel];
-			config->n[channel] = 0;
-			config->sum[channel] = 0;
-			config->val_min[channel] = INT32_MAX;
-			config->val_max[channel] = INT32_MIN;
-
-		}
+		set(bus, MCP356X_REG_IRQ, MCP356X_IRQ_MODE_LOGIC_HIGH);
+		uint32_t value = 0;
+		get(bus, MCP356X_REG_IRQ, &value);
+		if(value & MCP356X_IRQ_MASK_POR_STATUS){break;}
+		k_sleep(K_MSEC(5000));
+		LOG_INF("MCP356X_REG_IRQ POR_STATUS issue");
 	}
 }
 
 
 
-
-
-int egadc_init(struct mcp356x_config * config)
+void egadc_MCP356X_init(struct mcp356x_config * config)
 {
-	LOG_INF("Init ADC MCP356X");
-
-
+	LOG_INF("Setting MCP356X regs");
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,
 	MCP356X_CFG_0_VREF_SEL_0 |
@@ -274,8 +211,8 @@ int egadc_init(struct mcp356x_config * config)
 	//set24_verbose(MCP356X_RSV_REG_W_A, 0x00900F00);
 	set(&config->bus, MCP356X_RSV_REG_W_A, 0x00900000);
 
-
-
+	/*
+	tryhard_reg_irq(&config->bus);
 	{
 		//uint32_t reg = MCP356X_REG_LOCK;
 		//set(&config->bus, reg, 0x00);
@@ -283,18 +220,108 @@ int egadc_init(struct mcp356x_config * config)
 	{
 		uint32_t value;
 		uint32_t reg = MCP356X_REG_LOCK;
-		int rv = get(&config->bus, reg, &value);
+		get(&config->bus, reg, &value);
 		LOG_INF("%s: %08x", MCP356X_REG_tostring(reg), value);
 	}
 	{
 		uint32_t value;
 		uint32_t reg = MCP356X_REG_CRC_CFG;
-		int rv = get(&config->bus, reg, &value);
+		get(&config->bus, reg, &value);
 		LOG_INF("%s: %08x", MCP356X_REG_tostring(reg), value);
 	}
+	*/
+
+}
 
 
 
+
+
+
+
+
+
+
+
+
+
+static void mcp356x_acquisition_thread(struct mcp356x_config * config)
+{
+	LOG_INF("mcp356x_acquisition_thread started!");
+	while (true)
+	{
+		int rv = 0;
+		//k_sem_take(&config->acq_sem, K_FOREVER);
+		rv = k_sem_take(&config->drdy_sem, K_SECONDS(12));
+		if(rv != 0)
+		{
+			LOG_ERR("mcp356x_acquisition_thread: k_sem_take: %i\n", rv);
+			egadc_MCP356X_init(config);
+			continue;
+		}
+		
+		config->num_drdy++;
+		int32_t value = 0;
+		uint8_t channel = 0;
+		rv = get_data_11(&config->bus, &value, &channel);
+		if (rv)
+		{
+			LOG_ERR("mcp356x_acquisition_thread error: get_data_11:%i\n", rv);
+			continue;
+		}
+
+		// Protect array bounds
+		if (channel >= MCP356X_CHANNEL_COUNT){continue;}
+
+
+		int32_t gain_reg = config->gain_reg;
+		if(config->is_scan)
+		{
+			switch (channel)
+			{
+			case MCP356X_CH_OFFSET  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_VCM     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_AVDD    : gain_reg = MCP356X_CFG_2_GAIN_X_033; break;
+			case MCP356X_CH_TEMP    : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_D  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_C  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_B  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_DIFF_A  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH7     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH6     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH5     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH4     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH3     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH2     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH1     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			case MCP356X_CH_CH0     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
+			default:
+				break;
+			}
+		}
+
+		int32_t mv = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
+		// https://dsp.stackexchange.com/questions/66171/single-pole-iir-filter-fixed-point-design
+		// efficient implementation of IIR1 alpha = 1/2:
+		config->mv_iir[channel] = (config->mv_iir[channel] + mv) >> 1;
+		config->mv_max[channel] = MAX(config->mv_max[channel], mv);
+		config->mv_min[channel] = MIN(config->mv_min[channel], mv);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+int egadc_init(struct mcp356x_config * config)
+{
+	egadc_MCP356X_init(config);
 
 	LOG_INF("Configuring port %s %i",config->irq.port->name, config->irq.pin);
 	int err;
@@ -313,7 +340,8 @@ int egadc_init(struct mcp356x_config * config)
 			ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE,
 			(k_thread_entry_t)mcp356x_acquisition_thread,
 			(void *)config, NULL, NULL,
-			K_PRIO_COOP(ADC_MCP356X_ACQUISITION_THREAD_PRIO),
+			//K_PRIO_COOP(ADC_MCP356X_ACQUISITION_THREAD_PRIO),
+			ADC_MCP356X_ACQUISITION_THREAD_PRIO,
 			//0,
 			0, K_NO_WAIT);
 	/* Add instance number to thread name? */
