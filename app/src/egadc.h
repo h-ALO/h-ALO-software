@@ -5,6 +5,15 @@
 
 #define ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE 1024
 #define ADC_MCP356X_ACQUISITION_THREAD_PRIO 20
+#define ADC_MCP356X_MAX_MSGS 8
+
+struct mcp356x_sample
+{
+	int32_t avg;
+	int32_t min;
+	int32_t max;
+};
+
 
 struct mcp356x_config
 {
@@ -16,12 +25,17 @@ struct mcp356x_config
 	struct k_thread thread;		/* Acquisition thread */
 	int num_irq;
 	int num_drdy;
+
+
+	char __aligned(4) msgq_buffer[ADC_MCP356X_MAX_MSGS * sizeof(struct mcp356x_sample)];
+	struct k_msgq msgq;
+
+
 	int n[MCP356X_CHANNEL_COUNT];
-	int mv[MCP356X_CHANNEL_COUNT];
-	int sum[MCP356X_CHANNEL_COUNT];
-	int avg[MCP356X_CHANNEL_COUNT];
-	int val_min[MCP356X_CHANNEL_COUNT];
-	int val_max[MCP356X_CHANNEL_COUNT];
+	int mv_avg[MCP356X_CHANNEL_COUNT];
+	int mv_min[MCP356X_CHANNEL_COUNT];
+	int mv_max[MCP356X_CHANNEL_COUNT];
+
 	int is_scan;
 	uint8_t gain_reg; /* Gain register value */
 	uint16_t vref_mv; /* Voltage reference millivolt value */

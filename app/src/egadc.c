@@ -120,6 +120,16 @@ static void drdy_callback(const struct device *port, struct gpio_callback *cb, g
 static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 {
 	LOG_INF("mcp356x_acquisition_thread started!");
+
+	uint8_t n[MCP356X_CHANNEL_COUNT];
+	int32_t mv_sum[MCP356X_CHANNEL_COUNT];
+	int32_t mv_min[MCP356X_CHANNEL_COUNT];
+	int32_t mv_max[MCP356X_CHANNEL_COUNT];
+	memset(n, 0, MCP356X_CHANNEL_COUNT);
+	memset(mv_sum, 0, MCP356X_CHANNEL_COUNT);
+	memset(mv_min, 0, MCP356X_CHANNEL_COUNT);
+	memset(mv_max, 0, MCP356X_CHANNEL_COUNT);
+
 	while (true)
 	{
 		int err = 0;
@@ -142,14 +152,14 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 		}
 
 		// Protect array bounds
-		if (channel >= MCP356X_CHANNEL_COUNT){continue;}
-		
+		if (channel >= MCP356X_CHANNEL_COUNT)
+		{
+			LOG_ERR("Channel id outside bounds");
+			continue;
+		}
 
-
-		config->n[channel]++;
+	
 		int32_t gain_reg = config->gain_reg;
-
-		// Only works for SCAN mode
 		if(config->is_scan)
 		{
 			switch (channel)
@@ -175,21 +185,23 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 			}
 		}
 
-		config->mv[channel] = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
-		config->sum[channel] += config->mv[channel];
-		
-		config->val_max[channel] = MAX(config->val_max[channel], config->mv[channel]);
-		config->val_min[channel] = MIN(config->val_min[channel], config->mv[channel]);
+		n[channel]++;
+		int32_t mv = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
+		mv_sum[channel] += mv;
+		mv_min[channel] = MIN(mv_min[channel], mv);
+		mv_max[channel] = MAX(mv_max[channel], mv);
 		
 		// After 1000 samples then calculate average:
-		if(config->n[channel] > 1000)
+		if(n[channel] > 1000)
 		{
-			config->avg[channel] = config->sum[channel] / config->n[channel];
-			config->n[channel] = 0;
-			config->sum[channel] = 0;
-			config->val_min[channel] = INT32_MAX;
-			config->val_max[channel] = INT32_MIN;
+			config->mv_avg[channel] = mv_sum[channel] / n[channel];
+			config->mv_min[channel] = mv_min[channel];
+			config->mv_max[channel] = mv_max[channel];
 
+			n[channel] = 0;
+			mv_sum[channel] = 0;
+			mv_min[channel] = INT32_MAX;
+			mv_max[channel] = INT32_MIN;
 		}
 	}
 }
@@ -202,6 +214,8 @@ int egadc_init(struct mcp356x_config * config)
 {
 	LOG_INF("Init ADC MCP356X");
 
+	k_msgq_init(&config->msgq, config->msgq_buffer, sizeof(struct mcp356x_sample), ADC_MCP356X_MAX_MSGS);
+	
 
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,
@@ -235,9 +249,10 @@ int egadc_init(struct mcp356x_config * config)
 	);
 	
 	set(&config->bus, MCP356X_REG_MUX,
-	MCP356X_MUX_VIN_POS_CH0 | 
+	MCP356X_MUX_VIN_POS_CH5 | 
 	//MCP356X_MUX_VIN_POS_CH1 | 
 	//MCP356X_MUX_VIN_POS_CH2 | 
+	//MCP356X_MUX_VIN_POS_CH3 | 
 	//MCP356X_MUX_VIN_POS_CH3 | 
 	//MCP356X_MUX_VIN_POS_TEMP |
 	//MCP356X_MUX_VIN_POS_AVDD | 

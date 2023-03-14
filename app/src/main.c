@@ -91,7 +91,7 @@ void main(void)
 		//printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
 		
 		//egadc_log_REG_IRQ(&c.bus, MCP356X_REG_IRQ);
-		printk("%8i %8i: %8i\n", c.num_irq, c.num_drdy, c.avg[MCP356X_CH_CH0]);
+		printk("%8i, %8i, %8i, %8i\n", c.n[MCP356X_CH_CH0], c.avg[MCP356X_CH_CH0], c.val_min[MCP356X_CH_CH0], c.val_max[MCP356X_CH_CH0]);
 		
 		
 		//mybt_progress();
