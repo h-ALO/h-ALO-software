@@ -92,11 +92,7 @@ void main(void)
 		
 		//egadc_log_REG_IRQ(&c.bus, MCP356X_REG_IRQ);
 		printk("%8i %8i: %8i %8i %8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
-		c.num_drdy = 0;
-		c.num_irq = 0;
-		c.mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
-		c.mv_min[MCP356X_CH_CH0] = INT32_MAX; // Reset min
-		c.mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
+		egadc_adc_value_reset(&c);
 		
 		
 		//mybt_progress();

@@ -35,7 +35,7 @@
     cs-gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
 	examplesensor0: examplesensor@0 {
 		compatible = "zephyr,examplesensor";
-		spi-max-frequency = <2000000>;
+		spi-max-frequency = <20000000>;
         irq-gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
 		reg = <0>;
 	};

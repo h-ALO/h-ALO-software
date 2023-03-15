@@ -35,7 +35,6 @@ int transceive(const struct spi_dt_spec *bus, uint8_t *tx, uint8_t *rx, uint8_t 
 }
 
 
-
 int get(const struct spi_dt_spec *bus, uint8_t reg, uint32_t * value)
 {
 	uint8_t len = MCP356X_get_len(reg);
@@ -62,11 +61,6 @@ int get_data_11(const struct spi_dt_spec *bus, int32_t * out_value, uint8_t * ou
 }
 
 
-
-
-
-
-
 int egadc_log_REG_IRQ(const struct spi_dt_spec *bus, uint8_t reg)
 {
 	uint32_t value;
@@ -77,8 +71,6 @@ int egadc_log_REG_IRQ(const struct spi_dt_spec *bus, uint8_t reg)
 	}
 	return rv;
 }
-
-
 
 
 #define MCP356X_LOG_SET_VALUE
@@ -102,44 +94,9 @@ return rv;
 }
 
 
-
-
-static void drdy_callback(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins)
-{
-	struct mcp356x_config *config = CONTAINER_OF(cb, struct mcp356x_config, drdy_cb);
-	//TODO: Why is num_irq inside drdy_callback much higher than num_drdy inside mcp356x_acquisition_thread?
-	config->num_irq++;
-	k_sem_give(&config->drdy_sem);
-}
-
-
-
-
-
-
-
-
-
-
-
-void tryhard_reg_irq(const struct spi_dt_spec *bus)
-{
-	while(1)
-	{
-		set(bus, MCP356X_REG_IRQ, MCP356X_IRQ_MODE_LOGIC_HIGH);
-		uint32_t value = 0;
-		get(bus, MCP356X_REG_IRQ, &value);
-		if(value & MCP356X_IRQ_MASK_POR_STATUS){break;}
-		k_sleep(K_MSEC(5000));
-		LOG_INF("MCP356X_REG_IRQ POR_STATUS issue");
-	}
-}
-
-
-
 void egadc_MCP356X_init(struct mcp356x_config * config)
 {
-	LOG_INF("Setting MCP356X regs");
+	LOG_INF("Setting registers in MCP356X");
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,
 	MCP356X_CFG_0_VREF_SEL_0 |
@@ -149,7 +106,8 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	);
 	set(&config->bus, MCP356X_REG_CFG_1,
 	MCP356X_CFG_1_PRE_1 |
-	MCP356X_CFG_1_OSR_32 |
+	//MCP356X_CFG_1_OSR_256 |
+	MCP356X_CFG_1_OSR_98304|
 	MCP356X_CFG_1_DITHER_DEF
 	);
 	set(&config->bus, MCP356X_REG_CFG_2,
@@ -208,15 +166,10 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	set(&config->bus, MCP356X_REG_IRQ, MCP356X_IRQ_MODE_LOGIC_HIGH);
 	set(&config->bus, MCP356X_REG_OFFSET_CAL, 0);
 	set(&config->bus, MCP356X_REG_GAIN_CAL, 0x00800000);
-	//set24_verbose(MCP356X_RSV_REG_W_A, 0x00900F00);
+	//set(&config->bus, MCP356X_RSV_REG_W_A, 0x00900F00);
 	set(&config->bus, MCP356X_RSV_REG_W_A, 0x00900000);
 
 	/*
-	tryhard_reg_irq(&config->bus);
-	{
-		//uint32_t reg = MCP356X_REG_LOCK;
-		//set(&config->bus, reg, 0x00);
-	}
 	{
 		uint32_t value;
 		uint32_t reg = MCP356X_REG_LOCK;
@@ -234,15 +187,13 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 }
 
 
-
-
-
-
-
-
-
-
-
+static void drdy_callback(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins)
+{
+	struct mcp356x_config *config = CONTAINER_OF(cb, struct mcp356x_config, drdy_cb);
+	//TODO: Why is num_irq inside drdy_callback much higher than num_drdy inside mcp356x_acquisition_thread?
+	config->num_irq++;
+	k_sem_give(&config->drdy_sem);
+}
 
 
 static void mcp356x_acquisition_thread(struct mcp356x_config * config)
@@ -251,7 +202,8 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 	while (true)
 	{
 		int rv = 0;
-		//k_sem_take(&config->acq_sem, K_FOREVER);
+
+		// Wait for IRQ callback to give this semaphore:
 		rv = k_sem_take(&config->drdy_sem, K_SECONDS(12));
 		if(rv != 0)
 		{
@@ -261,6 +213,8 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 		}
 		
 		config->num_drdy++;
+		
+		// Read ADC value in MCP356X register MCP356X_REG_ADC_DATA as DATA_FORMAT=11:
 		int32_t value = 0;
 		uint8_t channel = 0;
 		rv = get_data_11(&config->bus, &value, &channel);
@@ -271,8 +225,11 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 		}
 
 		// Protect array bounds
-		if (channel >= MCP356X_CHANNEL_COUNT){continue;}
-
+		if (channel >= MCP356X_CHANNEL_COUNT)
+		{
+			LOG_ERR("mcp356x_acquisition_thread error: channel out of bounds:%i\n", channel);
+			continue;
+		}
 
 		int32_t gain_reg = config->gain_reg;
 		if(config->is_scan)
@@ -310,19 +267,9 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 }
 
 
-
-
-
-
-
-
-
-
-
 int egadc_init(struct mcp356x_config * config)
 {
 	egadc_MCP356X_init(config);
-
 	LOG_INF("Configuring port %s %i",config->irq.port->name, config->irq.pin);
 	int err;
 	err = gpio_pin_configure_dt(&config->irq, GPIO_INPUT);
@@ -332,10 +279,8 @@ int egadc_init(struct mcp356x_config * config)
 	gpio_init_callback(&config->drdy_cb, drdy_callback, BIT(config->irq.pin));
 	err = gpio_add_callback(config->irq.port, &config->drdy_cb);
 	if (err) {return err;}
-
 	k_sem_init(&config->acq_sem, 0, 1);
 	k_sem_init(&config->drdy_sem, 0, 1);
-
 	k_thread_create(&config->thread, config->stack,
 			ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE,
 			(k_thread_entry_t)mcp356x_acquisition_thread,
@@ -346,12 +291,18 @@ int egadc_init(struct mcp356x_config * config)
 			0, K_NO_WAIT);
 	/* Add instance number to thread name? */
 	k_thread_name_set(&config->thread, "mcp356x");
-
 	return 0;
 }
 
 
 
-
+void egadc_adc_value_reset(struct mcp356x_config * config)
+{
+	config->num_drdy = 0;
+	config->num_irq = 0;
+	config->mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
+	config->mv_min[MCP356X_CH_CH0] = INT32_MAX; // Reset min
+	config->mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
+}
 
 
