@@ -130,7 +130,7 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	);
 	
 	set(&config->bus, MCP356X_REG_MUX,
-	MCP356X_MUX_VIN_POS_CH0 | 
+	MCP356X_MUX_VIN_POS_CH5 | 
 	//MCP356X_MUX_VIN_POS_CH1 | 
 	//MCP356X_MUX_VIN_POS_CH2 | 
 	//MCP356X_MUX_VIN_POS_CH3 | 

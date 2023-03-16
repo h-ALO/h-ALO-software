@@ -29,6 +29,17 @@
 // https://github.com/zephyrproject-rtos/zephyr/blob/ee91cd5665b1590c9a8a9a992bb19d81feeeb461/boards/arm/bt610/bt610.dts#L268
 
 
+// Connect cables as following:
+// ADC PCB    cable color   ST-Nucleo-WB55RG
+// =========================================
+// ADC_CS     ---green----  (PA4,D10)
+// ADC_SCK    ---white----  (PA5,D13,20,SCK)
+// ADC_SDI    ---yellow---  (PA7,D11,22,MOSI)
+// ADC_SDO    ---gray-----  (PA6,D12,21,MISO)
+// ADC_INT    ---purple---  (PC13,D7)
+
+
+
 &spi1 {
     status = "okay";
     pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pa5 &spi1_miso_pa6 &spi1_mosi_pa7>;
