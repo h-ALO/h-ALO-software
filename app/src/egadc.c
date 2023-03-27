@@ -106,6 +106,7 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	);
 	set(&config->bus, MCP356X_REG_CFG_1,
 	MCP356X_CFG_1_PRE_1 |
+	//MCP356X_CFG_1_OSR_32 |
 	//MCP356X_CFG_1_OSR_256 |
 	MCP356X_CFG_1_OSR_98304|
 	MCP356X_CFG_1_DITHER_DEF
@@ -130,7 +131,11 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	);
 	
 	set(&config->bus, MCP356X_REG_MUX,
-	MCP356X_MUX_VIN_POS_CH5 | 
+	//MCP356X_MUX_VIN_POS_CH0 | //10Mohm + 1µA offset
+	//MCP356X_MUX_VIN_POS_CH1 | //10Mohm
+	//MCP356X_MUX_VIN_POS_CH5 | //100Mohm + 1µA offset
+	MCP356X_MUX_VIN_POS_CH4 | //100Mohm
+	//MCP356X_MUX_VIN_POS_CH3 | //1Gohm
 	//MCP356X_MUX_VIN_POS_CH1 | 
 	//MCP356X_MUX_VIN_POS_CH2 | 
 	//MCP356X_MUX_VIN_POS_CH3 | 

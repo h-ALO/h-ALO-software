@@ -91,7 +91,7 @@ void main(void)
 		//printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
 		
 		//egadc_log_REG_IRQ(&c.bus, MCP356X_REG_IRQ);
-		printk("%8i %8i: %8i %8i %8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
+		printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
 		egadc_adc_value_reset(&c);
 		
 		
