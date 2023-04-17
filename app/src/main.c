@@ -1,34 +1,20 @@
 /*
 west build -b nucleo_wb55rg
 
-Booting Zephyr OS build zephyr-v3.1.0-3437-gd9ed09357ee0
-Booting Zephyr OS build zephyr-v3.1.0-4550-g2cbd287e0c21 (tried on laptop, bluetooth problems)
-Booting Zephyr OS build v3.2.0-rc1-57-gb27c5d73ef09
+*** Booting Zephyr OS build zephyr-v3.3.0-1017-g1545f9ba7f33 ***
+[00:00:00.005,000] <ESC>[0m<inf> main: Zephyr Example Application /soc/spi@40013000/examplesensor@0<ESC>[0m
+*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
+[00:00:00.005,000] <ESC>[0m<inf> main: Zephyr Example Application /soc/spi@40013000/examplesensor@0<ESC>[0m
+[00:00:00.014,000] <ESC>[0m<inf> adc_mcp356x: Setting registers in MCP356X<ESC>[0m
+[00:00:00.021,000] <ESC>[0m<inf> adc_mcp356x: Register set: MCP356X_REG_LOCK        : 000000a5 00000000<ESC>[0m
+[00:00:00.030,000] <ESC>[0m<inf> adc_mcp356x: Register set: MCP356X_REG_CFG_0       : 00000023 00000000<ESC>[0m
 
 
 
 
-
-
-
-*** Booting Zephyr OS build v3.2.0-rc1-57-gb27c5d73ef09  ***                              
-Bluetooth initialized                                                                       
-Advertising successfully started                                                           
-[00:00:00.326,000] [0m<inf> main: Zephyr Example Application 1.0.0[0m                     
-Connected                                                                               
-[00:05:08.462,000] [1;33m<wrn> hci_ipm: Invalid peer addr FF:FF:FF:FF:FF:FF (random)[0m    
-[00:05:08.464,000] [1;33m<wrn> bt_hci_core: opcode 0x2016 status 0x3a[0m                  
-[00:05:08.464,000] [1;31m<err> bt_hci_core: Failed read remote features (-5)[0m          
-[00:05:08.464,000] [1;33m<wrn> bt_hci_core: opcode 0x2032 status 0x0c[0m                     
-[00:05:08.464,000] [1;31m<err> bt_hci_core: Failed LE Set PHY (-5)[0m                           
-[00:05:15.520,000] [0m<inf> bas: BAS Notifications enabled[0m
-
-
-
-*** Booting Zephyr OS build v3.2.0-rc1-57-gb27c5d73ef09  ***
-*** Booting Zephyr OS build v3.2.0-rc3-24-g8364715998c9  ***
-
-
+*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
+*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
+*** Booting Zephyr OS build zephyr-v3.3.0-2655-g9e105d203766 ***
 
 
 
@@ -48,16 +34,51 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 //struct spi_dt_spec bus = SPI_DT_SPEC_GET(DT_NODELABEL(mcp3204), SPI_WORD_SET(8) | SPI_MODE_GET(0), 1);
 
 
-struct mcp356x_config c = 
-{
-	.bus = SPI_DT_SPEC_GET(DT_NODELABEL(examplesensor0), SPI_WORD_SET(8) | SPI_MODE_GET(0), 1),
-	.irq = GPIO_DT_SPEC_GET(DT_NODELABEL(examplesensor0), irq_gpios)
-};
-
-
 // The ADC9 uses 2000mV voltage ref chip MCP1501
 #define ADC9_VREF 2048
 #define TIABT_VREF 3000
+
+
+
+
+
+void app_print_voltage_ref(struct mcp356x_config * c)
+{
+	LOG_INF("Checking voltage reference:");
+	egadc_adc_value_reset(c);
+	egadc_set_mux(c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_VREF_EXT_PLUS);
+	int n = 10;
+	while (n--)
+	{
+		printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c->num_irq, c->num_drdy, c->mv_iir[MCP356X_CH_CH0], c->mv_min[MCP356X_CH_CH0], c->mv_max[MCP356X_CH_CH0]);
+		egadc_adc_value_reset(c);
+		k_sleep(K_MSEC(1000));
+	}
+}
+
+
+
+enum app_state
+{
+	APP_START,
+	APP_WAITING,
+	APP_INIT_ADC,
+	APP_PRINT_ADC
+};
+
+
+
+struct mcp356x_config c = 
+{
+	.bus = SPI_DT_SPEC_GET(DT_NODELABEL(examplesensor0), SPI_WORD_SET(8) | SPI_MODE_GET(0), 1),
+	.irq = GPIO_DT_SPEC_GET(DT_NODELABEL(examplesensor0), irq_gpios),
+	.is_scan = false,
+	.gain_reg = MCP356X_CFG_2_GAIN_X_033,
+	.vref_mv = TIABT_VREF
+};
+
+
+
 
 void main(void)
 {
@@ -68,18 +89,63 @@ void main(void)
 		LOG_ERR("SPI bus is not ready %i", 0);
 		return;
 	}
-	
-	
-	c.is_scan = false;
-	c.gain_reg = MCP356X_CFG_2_GAIN_X_033;
-	c.vref_mv = TIABT_VREF;
-	egadc_init(&c);
-	//mybt_init();
 
+	//mybt_init();
 	//while (1){k_sleep(K_MSEC(5000));}
 
+
+	while(0)
+	{
+		LOG_INF("1");
+		k_sleep(K_MSEC(1000));
+	}
+
+
+	int appstate = APP_START;
 	while (1)
 	{
+		if(c.status & EGADC_TIMEOUT_BIT)
+		{
+			appstate = APP_INIT_ADC;
+		}
+
+
+		switch (appstate)
+		{
+		case APP_WAITING:
+			LOG_INF("APP_WAITING");
+			if(c.status & EGADC_THREAD_STARTED_BIT)
+			{
+				app_print_voltage_ref(&c);
+				egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
+				appstate = APP_PRINT_ADC;
+			}
+			break;
+
+		case APP_START:
+			LOG_INF("APP_START");
+			egadc_setup_board(&c);
+			appstate = APP_INIT_ADC;
+			break;
+
+		case APP_INIT_ADC:
+			LOG_INF("APP_INIT_ADC");
+			egadc_setup_adc(&c);
+			appstate = APP_WAITING;
+			break;
+
+		case APP_PRINT_ADC:
+			printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
+			egadc_adc_value_reset(&c);
+			break;
+
+		default:
+			break;
+		}
+
+
+
+
 		//printk("%08X\n", c.lastdata);
 		
 		
@@ -91,8 +157,7 @@ void main(void)
 		//printk("n   " MCP356X_PRINTF_PLUS "\n", MCP356X_ARGS(c.n));
 		
 		//egadc_log_REG_IRQ(&c.bus, MCP356X_REG_IRQ);
-		printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
-		egadc_adc_value_reset(&c);
+
 		
 		
 		//mybt_progress();

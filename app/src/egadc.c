@@ -94,7 +94,11 @@ return rv;
 }
 
 
-void egadc_MCP356X_init(struct mcp356x_config * config)
+
+
+
+
+void egadc_setup_adc(struct mcp356x_config * config)
 {
 	LOG_INF("Setting registers in MCP356X");
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
@@ -130,6 +134,7 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	MCP356X_CFG_3_CRC_GAIN_CAL_EN
 	);
 	
+	/*
 	set(&config->bus, MCP356X_REG_MUX,
 	//MCP356X_MUX_VIN_POS_CH0 | //10Mohm + 1µA offset
 	//MCP356X_MUX_VIN_POS_CH1 | //10Mohm
@@ -147,6 +152,7 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 	//MCP356X_MUX_VIN_POS_CH5 | 
 	MCP356X_MUX_VIN_NEG_AGND |
 	0);
+	*/
 	
 	//set(&config->bus, MCP356X_REG_SCAN, 0);
 	
@@ -192,6 +198,27 @@ void egadc_MCP356X_init(struct mcp356x_config * config)
 }
 
 
+
+
+
+void egadc_set_mux(struct mcp356x_config * config, uint32_t mux)
+{
+	set(&config->bus, MCP356X_REG_MUX, mux);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 static void drdy_callback(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins)
 {
 	struct mcp356x_config *config = CONTAINER_OF(cb, struct mcp356x_config, drdy_cb);
@@ -204,6 +231,7 @@ static void drdy_callback(const struct device *port, struct gpio_callback *cb, g
 static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 {
 	LOG_INF("mcp356x_acquisition_thread started!");
+	config->status = EGADC_THREAD_STARTED_BIT;
 	while (true)
 	{
 		int rv = 0;
@@ -213,7 +241,7 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 		if(rv != 0)
 		{
 			LOG_ERR("mcp356x_acquisition_thread: k_sem_take: %i\n", rv);
-			egadc_MCP356X_init(config);
+			config->status = EGADC_TIMEOUT_BIT;
 			continue;
 		}
 		
@@ -272,9 +300,8 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 }
 
 
-int egadc_init(struct mcp356x_config * config)
+int egadc_setup_board(struct mcp356x_config * config)
 {
-	egadc_MCP356X_init(config);
 	LOG_INF("Configuring port %s %i",config->irq.port->name, config->irq.pin);
 	int err;
 	err = gpio_pin_configure_dt(&config->irq, GPIO_INPUT);
@@ -294,7 +321,6 @@ int egadc_init(struct mcp356x_config * config)
 			ADC_MCP356X_ACQUISITION_THREAD_PRIO,
 			//0,
 			0, K_NO_WAIT);
-	/* Add instance number to thread name? */
 	k_thread_name_set(&config->thread, "mcp356x");
 	return 0;
 }
