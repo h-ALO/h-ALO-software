@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2021 Nordic Semiconductor ASA
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* This devicetree overlay file will be automatically picked by the Zephyr
+ * build system when building the sample for the nucleo_f302r8 board. It shows
+ * how the example-application can be built on sample boards already provided
+ * by Zephyr.
+ */
+
+/ {
+
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+// Connect cables as following:
+// ADC PCB    cable color   ESP32C3-DevKitC
+// =========================================
+// ADC_CS     ---green----  SPIM2_CSEL_GPIO10
+// ADC_SCK    ---white----  SPIM2_SCLK_GPIO6
+// ADC_SDI    ---yellow---  SPIM2_MOSI_GPIO7
+// ADC_SDO    ---gray-----  SPIM2_MISO_GPIO2
+// ADC_INT    ---purple---  GPIO19
+
+&spi2 {
+    status = "okay";
+    // pinctrl-0 = <&SPIM2_CSEL_GPIO10 &SPIM2_SCLK_GPIO6 &SPIM2_MISO_GPIO2 &SPIM2_MOSI_GPIO7>;
+	pinctrl-0 = <&spim2_default>;
+    // cs-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+	examplesensor0: examplesensor@0 {
+		compatible = "zephyr,examplesensor";
+		spi-max-frequency = <2000000>;
+        irq-gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
+		reg = <0>;
+	};
+};
