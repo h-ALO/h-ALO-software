@@ -48,6 +48,7 @@ int get(const struct spi_dt_spec *bus, uint8_t reg, uint32_t * value)
 
 /*
 In MUX mode, channel is defaulted to 0.
+Get ADC data as (dataformat 11), see datasheet for more info
 */
 int get_data_11(const struct spi_dt_spec *bus, int32_t * out_value, uint8_t * out_channel)
 {
@@ -94,13 +95,37 @@ return rv;
 }
 
 
-
+typedef struct
+{
+	uint8_t key;
+	uint32_t value;
+} egadc_regval_pair_t;
 
 
 
 void egadc_setup_adc(struct mcp356x_config * config)
 {
 	LOG_INF("Setting registers in MCP356X");
+
+	egadc_regval_pair_t a[] = 
+	{
+		{MCP356X_REG_CFG_0, MCP356X_CFG_0_VREF_SEL_0 | MCP356X_CFG_0_CLK_SEL_2 | MCP356X_CFG_0_CS_SEL_0 | MCP356X_CFG_0_MODE_CONV},
+		{MCP356X_REG_CFG_1, MCP356X_CFG_1_PRE_1 | MCP356X_CFG_1_OSR_98304 | MCP356X_CFG_1_DITHER_DEF},
+		{MCP356X_REG_CFG_2, MCP356X_CFG_2_BOOST_X_1 | config->gain_reg | MCP356X_CFG_2_AZ_MUX_DIS},
+		{MCP356X_REG_CFG_3, MCP356X_CFG_3_CONV_MODE_CONT |MCP356X_CFG_3_DATA_FORMAT_CH_ADC |MCP356X_CFG_3_CRC_FORMAT_16 |MCP356X_CFG_3_CRC_COM_DIS |MCP356X_CFG_3_CRC_OFF_CAL_EN |MCP356X_CFG_3_CRC_GAIN_CAL_EN},
+		{MCP356X_REG_IRQ, MCP356X_IRQ_MODE_LOGIC_HIGH},
+		{MCP356X_REG_MUX, 0},
+		{MCP356X_REG_SCAN, 0},
+		{MCP356X_REG_TIMER, 0},
+		{MCP356X_REG_OFFSET_CAL, 0},
+		{MCP356X_REG_GAIN_CAL, 0x00800000},
+		{MCP356X_RSV_REG_W_A, 0x00900000},
+		{MCP356X_REG_C, 0},
+		{MCP356X_REG_LOCK, 0xA5},
+		{MCP356X_RSV_REG, 0},
+		{MCP356X_REG_CRC_CFG, 0},
+	};
+
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,
 	MCP356X_CFG_0_VREF_SEL_0 |
@@ -231,23 +256,23 @@ static void drdy_callback(const struct device *port, struct gpio_callback *cb, g
 static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 {
 	LOG_INF("mcp356x_acquisition_thread started!");
-	config->status = EGADC_THREAD_STARTED_BIT;
+	config->status |= EGADC_THREAD_STARTED_BIT;
 	while (true)
 	{
 		int rv = 0;
 
 		// Wait for IRQ callback to give this semaphore:
-		rv = k_sem_take(&config->drdy_sem, K_SECONDS(12));
+		rv = k_sem_take(&config->drdy_sem, K_SECONDS(1));
 		if(rv != 0)
 		{
 			LOG_ERR("mcp356x_acquisition_thread: k_sem_take: %i\n", rv);
-			config->status = EGADC_TIMEOUT_BIT;
+			config->status |= EGADC_TIMEOUT_BIT;
 			continue;
 		}
 		
 		config->num_drdy++;
 		
-		// Read ADC value in MCP356X register MCP356X_REG_ADC_DATA as DATA_FORMAT=11:
+		// Read ADC value from register MCP356X_REG_ADC_DATA as DATA_FORMAT=11:
 		int32_t value = 0;
 		uint8_t channel = 0;
 		rv = get_data_11(&config->bus, &value, &channel);
@@ -264,30 +289,10 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 			continue;
 		}
 
-		int32_t gain_reg = config->gain_reg;
+		uint8_t gain_reg = config->gain_reg;
 		if(config->is_scan)
 		{
-			switch (channel)
-			{
-			case MCP356X_CH_OFFSET  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_VCM     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_AVDD    : gain_reg = MCP356X_CFG_2_GAIN_X_033; break;
-			case MCP356X_CH_TEMP    : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_D  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_C  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_B  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_DIFF_A  : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH7     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH6     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH5     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH4     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH3     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH2     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH1     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			case MCP356X_CH_CH0     : gain_reg = MCP356X_CFG_2_GAIN_X_1; break;
-			default:
-				break;
-			}
+			gain_reg = MCP356X_get_scan_channel_gain(channel);
 		}
 
 		int32_t mv = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
@@ -305,14 +310,36 @@ int egadc_setup_board(struct mcp356x_config * config)
 	LOG_INF("Configuring port %s %i",config->irq.port->name, config->irq.pin);
 	int err;
 	err = gpio_pin_configure_dt(&config->irq, GPIO_INPUT);
-	if (err) {return err;}
+	if (err)
+	{
+		LOG_ERR("gpio_pin_configure_dt error: %i\n", err);
+		return err;
+	}
 	err = gpio_pin_interrupt_configure_dt(&config->irq, GPIO_INT_EDGE_TO_ACTIVE);
-	if (err) {return err;}
+	if (err)
+	{
+		LOG_ERR("gpio_pin_interrupt_configure_dt error: %i\n", err);
+		return err;
+	}
 	gpio_init_callback(&config->drdy_cb, drdy_callback, BIT(config->irq.pin));
 	err = gpio_add_callback(config->irq.port, &config->drdy_cb);
-	if (err) {return err;}
-	k_sem_init(&config->acq_sem, 0, 1);
-	k_sem_init(&config->drdy_sem, 0, 1);
+	if (err)
+	{
+		LOG_ERR("gpio_add_callback error: %i\n", err);
+		return err;
+	}
+	err = k_sem_init(&config->acq_sem, 0, 1);
+	if (err)
+	{
+		LOG_ERR("k_sem_init error: %i\n", err);
+		return err;
+	}
+	err = k_sem_init(&config->drdy_sem, 0, 1);
+	if (err)
+	{
+		LOG_ERR("k_sem_init error: %i\n", err);
+		return err;
+	}
 	k_thread_create(&config->thread, config->stack,
 			ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE,
 			(k_thread_entry_t)mcp356x_acquisition_thread,
@@ -321,7 +348,12 @@ int egadc_setup_board(struct mcp356x_config * config)
 			ADC_MCP356X_ACQUISITION_THREAD_PRIO,
 			//0,
 			0, K_NO_WAIT);
-	k_thread_name_set(&config->thread, "mcp356x");
+	err = k_thread_name_set(&config->thread, "mcp356x");
+	if (err)
+	{
+		LOG_ERR("k_thread_name_set error: %i\n", err);
+		return err;
+	}
 	return 0;
 }
 

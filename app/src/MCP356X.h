@@ -80,22 +80,66 @@ registers made of volatile memory.
 The data can be
 formatted in 24/32-bit modes depending on the DATA_FORMAT
 */
-#define MCP356X_REG_ADC_DATA                 0x00 // 4/24/32 R
-#define MCP356X_REG_CFG_0                    0x01 // 8       RW
-#define MCP356X_REG_CFG_1                    0x02 // 8       RW
-#define MCP356X_REG_CFG_2                    0x03 // 8       RW
-#define MCP356X_REG_CFG_3                    0x04 // 8       RW
-#define MCP356X_REG_IRQ                      0x05 // 8       RW
-#define MCP356X_REG_MUX                      0x06 // 8       RW
-#define MCP356X_REG_SCAN                     0x07 // 24      RW
-#define MCP356X_REG_TIMER                    0x08 // 24      RW
-#define MCP356X_REG_OFFSET_CAL               0x09 // 24      RW
-#define MCP356X_REG_GAIN_CAL                 0x0A // 24      RW
-#define MCP356X_RSV_REG_W_A                  0x0B // 24      RW
-#define MCP356X_REG_C                        0x0C // 8       RW
-#define MCP356X_REG_LOCK                     0x0D // 8       RW
-#define MCP356X_RSV_REG                      0x0E // 16      RW
-#define MCP356X_REG_CRC_CFG                  0x0F // 16      R
+#define MCP356X_REG_ADC_DATA                 0x00 // | 4/24/32 | R  | 
+#define MCP356X_REG_CFG_0                    0x01 // | 8       | RW | 
+#define MCP356X_REG_CFG_1                    0x02 // | 8       | RW | 
+#define MCP356X_REG_CFG_2                    0x03 // | 8       | RW | 
+#define MCP356X_REG_CFG_3                    0x04 // | 8       | RW | 
+#define MCP356X_REG_IRQ                      0x05 // | 8       | RW | 
+#define MCP356X_REG_MUX                      0x06 // | 8       | RW | 
+#define MCP356X_REG_SCAN                     0x07 // | 24      | RW | 
+#define MCP356X_REG_TIMER                    0x08 // | 24      | RW | 
+#define MCP356X_REG_OFFSET_CAL               0x09 // | 24      | RW | 
+#define MCP356X_REG_GAIN_CAL                 0x0A // | 24      | RW | 
+#define MCP356X_RSV_REG_W_A                  0x0B // | 24      | RW | 
+#define MCP356X_REG_C                        0x0C // | 8       | RW | 
+#define MCP356X_REG_LOCK                     0x0D // | 8       | RW | 
+#define MCP356X_RSV_REG                      0x0E // | 16      | RW | 
+#define MCP356X_REG_CRC_CFG                  0x0F // | 16      | R  | 
+
+
+
+/*
+Address Register Name No. of
+Bits R/W Description
+0x0 ADCDATA 4/24/32 R Latest A/D conversion data output value (24 or 32 bits depending on
+DATA_FORMAT[1:0]) or modulator output stream (4-bit wide) in MDAT
+Output mode
+0x1 CONFIG0 8 R/W ADC Operating mode, Master Clock mode and Input Bias Current
+Source mode
+0x2 CONFIG1 8 R/W Prescale and OSR settings
+0x3 CONFIG2 8 R/W ADC boost and gain settings, auto-zeroing settings for analog
+multiplexer, voltage reference and ADC
+0x4 CONFIG3 8 R/W Conversion mode, data and CRC format settings; enable for CRC on
+communications, enable for digital offset and gain error calibrations
+0x5 IRQ 8 R/W IRQ Status bits and IRQ mode settings; enable for Fast commands and
+for conversion start pulse
+0x6 MUX 8 R/W Analog multiplexer input selection (MUX mode only)
+0x7 SCAN 24 R/W SCAN mode settings
+0x8 TIMER 24 R/W Delay value for TIMER between scan cycles
+0x9 OFFSETCAL 24 R/W ADC digital offset calibration value
+0xA GAINCAL 24 R/W ADC digital gain calibration value
+0xB RESERVED 24 R/W
+0xC RESERVED 8 R/W
+0xD LOCK 8 R/W Password value for SPI Write mode locking
+0xE RESERVED 16 R/W
+0xF CRCCFG 16 R CRC checksum for device configuration
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -470,11 +514,11 @@ Differential Channel D (CH6-CH7) 1011 0x67 None
 
 
 char const * MCP356X_REG_tostring(int a);
-int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, int32_t gain_reg);
+int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, uint8_t gain_reg);
 void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * out_value, uint8_t * out_channel);
 uint32_t MCP356X_get_len(uint8_t reg);
 uint32_t MCP356X_get_value(uint8_t rx[5], uint8_t len);
 void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value);
-
+uint8_t MCP356X_get_scan_channel_gain(uint8_t channel);
 
 

@@ -40,7 +40,11 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 
 
-
+void app_print_voltage(struct mcp356x_config * c)
+{
+	int index = MCP356X_CH_CH0;
+	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, c->mv_iir[index], c->mv_min[index], c->mv_max[index], c->mv_max[index] - c->mv_min[index]);
+}
 
 void app_print_voltage_ref(struct mcp356x_config * c)
 {
@@ -50,11 +54,15 @@ void app_print_voltage_ref(struct mcp356x_config * c)
 	int n = 10;
 	while (n--)
 	{
-		printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c->num_irq, c->num_drdy, c->mv_iir[MCP356X_CH_CH0], c->mv_min[MCP356X_CH_CH0], c->mv_max[MCP356X_CH_CH0]);
+		app_print_voltage(c);
 		egadc_adc_value_reset(c);
 		k_sleep(K_MSEC(1000));
 	}
 }
+
+
+
+
 
 
 
@@ -102,11 +110,13 @@ void main(void)
 
 
 	int appstate = APP_START;
+
 	while (1)
 	{
 		if(c.status & EGADC_TIMEOUT_BIT)
 		{
 			appstate = APP_INIT_ADC;
+			c.status &= ~EGADC_TIMEOUT_BIT;
 		}
 
 
@@ -114,10 +124,12 @@ void main(void)
 		{
 		case APP_WAITING:
 			LOG_INF("APP_WAITING");
-			if(c.status & EGADC_THREAD_STARTED_BIT)
+			k_sleep(K_MSEC(1000));
+			if(c.num_drdy > 0)
 			{
 				app_print_voltage_ref(&c);
-				egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
+				//egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
+				egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0);
 				appstate = APP_PRINT_ADC;
 			}
 			break;
@@ -134,10 +146,11 @@ void main(void)
 			appstate = APP_WAITING;
 			break;
 
-		case APP_PRINT_ADC:
-			printk("IRQ:%-4i DRDY:%-4i avg:%-8i min:%-8i max:%-8i\n", c.num_irq, c.num_drdy, c.mv_iir[MCP356X_CH_CH0], c.mv_min[MCP356X_CH_CH0], c.mv_max[MCP356X_CH_CH0]);
+		case APP_PRINT_ADC:{
+			k_sleep(K_MSEC(1000));
+			app_print_voltage(&c);
 			egadc_adc_value_reset(&c);
-			break;
+			break;}
 
 		default:
 			break;
@@ -164,7 +177,6 @@ void main(void)
 		//bt_bas_set_battery_level(i++);
 
 		//k_sem_give(&c.acq_sem);
-		k_sleep(K_MSEC(1000));
 	}
 }
 

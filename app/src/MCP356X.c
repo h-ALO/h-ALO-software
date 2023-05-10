@@ -41,7 +41,7 @@ char const * MCP356X_REG_tostring(int a)
 000 = Gain is x1/3
 */
 
-int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, int32_t gain_reg)
+int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, uint8_t gain_reg)
 {
 	int32_t c = (MCP356X_CALC_COEF / vref_mv);
 	switch(gain_reg)
@@ -164,6 +164,34 @@ void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value)
 		break;
 	}
 }
+
+
+
+uint8_t MCP356X_get_scan_channel_gain(uint8_t channel)
+{
+	switch (channel)
+	{
+	case MCP356X_CH_OFFSET  : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_VCM     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_AVDD    : return MCP356X_CFG_2_GAIN_X_033;
+	case MCP356X_CH_TEMP    : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_DIFF_D  : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_DIFF_C  : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_DIFF_B  : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_DIFF_A  : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH7     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH6     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH5     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH4     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH3     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH2     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH1     : return MCP356X_CFG_2_GAIN_X_1;
+	case MCP356X_CH_CH0     : return MCP356X_CFG_2_GAIN_X_1;
+	default                 : return 0xFF;
+	}
+}
+
+
 
 
 
