@@ -522,3 +522,6 @@ void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value);
 uint8_t MCP356X_get_scan_channel_gain(uint8_t channel);
 
 
+
+char const * MCP356X_MUX_POS_to_str(uint32_t value);
+char const * MCP356X_MUX_NEG_to_str(uint32_t value);

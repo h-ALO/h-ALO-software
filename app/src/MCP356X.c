@@ -195,3 +195,50 @@ uint8_t MCP356X_get_scan_channel_gain(uint8_t channel)
 
 
 
+char const * MCP356X_MUX_POS_to_str(uint32_t value)
+{
+	switch(value)
+	{
+		case MCP356X_MUX_VIN_POS_NO_IN          : return "MCP356X_MUX_VIN_POS_NO_IN          ";
+		case MCP356X_MUX_VIN_POS_VCM            : return "MCP356X_MUX_VIN_POS_VCM            ";
+		case MCP356X_MUX_VIN_POS_TEMP           : return "MCP356X_MUX_VIN_POS_TEMP           ";
+		case MCP356X_MUX_VIN_POS_VREF_EXT_MINUS : return "MCP356X_MUX_VIN_POS_VREF_EXT_MINUS ";
+		case MCP356X_MUX_VIN_POS_VREF_EXT_PLUS  : return "MCP356X_MUX_VIN_POS_VREF_EXT_PLUS  ";
+		case MCP356X_MUX_VIN_POS_VREF_INT       : return "MCP356X_MUX_VIN_POS_VREF_INT       ";
+		case MCP356X_MUX_VIN_POS_AVDD           : return "MCP356X_MUX_VIN_POS_AVDD           ";
+		case MCP356X_MUX_VIN_POS_AGND           : return "MCP356X_MUX_VIN_POS_AGND           ";
+		case MCP356X_MUX_VIN_POS_CH7            : return "MCP356X_MUX_VIN_POS_CH7            ";
+		case MCP356X_MUX_VIN_POS_CH6            : return "MCP356X_MUX_VIN_POS_CH6            ";
+		case MCP356X_MUX_VIN_POS_CH5            : return "MCP356X_MUX_VIN_POS_CH5            ";
+		case MCP356X_MUX_VIN_POS_CH4            : return "MCP356X_MUX_VIN_POS_CH4            ";
+		case MCP356X_MUX_VIN_POS_CH3            : return "MCP356X_MUX_VIN_POS_CH3            ";
+		case MCP356X_MUX_VIN_POS_CH2            : return "MCP356X_MUX_VIN_POS_CH2            ";
+		case MCP356X_MUX_VIN_POS_CH1            : return "MCP356X_MUX_VIN_POS_CH1            ";
+		case MCP356X_MUX_VIN_POS_CH0            : return "MCP356X_MUX_VIN_POS_CH0            ";
+		default: return "";
+	}
+}
+
+char const * MCP356X_MUX_NEG_to_str(uint32_t value)
+{
+	switch(value)
+	{
+		case MCP356X_MUX_VIN_NEG_NO_IN          : return "MCP356X_MUX_VIN_NEG_NO_IN         ";
+		case MCP356X_MUX_VIN_NEG_VCM            : return "MCP356X_MUX_VIN_NEG_VCM           ";
+		case MCP356X_MUX_VIN_NEG_TEMP           : return "MCP356X_MUX_VIN_NEG_TEMP          ";
+		case MCP356X_MUX_VIN_NEG_VREF_EXT_MINUS : return "MCP356X_MUX_VIN_NEG_VREF_EXT_MINUS";
+		case MCP356X_MUX_VIN_NEG_VREF_EXT_PLUS  : return "MCP356X_MUX_VIN_NEG_VREF_EXT_PLUS ";
+		case MCP356X_MUX_VIN_NEG_VREF_INT       : return "MCP356X_MUX_VIN_NEG_VREF_INT      ";
+		case MCP356X_MUX_VIN_NEG_AVDD           : return "MCP356X_MUX_VIN_NEG_AVDD          ";
+		case MCP356X_MUX_VIN_NEG_AGND           : return "MCP356X_MUX_VIN_NEG_AGND          ";
+		case MCP356X_MUX_VIN_NEG_CH7            : return "MCP356X_MUX_VIN_NEG_CH7           ";
+		case MCP356X_MUX_VIN_NEG_CH6            : return "MCP356X_MUX_VIN_NEG_CH6           ";
+		case MCP356X_MUX_VIN_NEG_CH5            : return "MCP356X_MUX_VIN_NEG_CH5           ";
+		case MCP356X_MUX_VIN_NEG_CH4            : return "MCP356X_MUX_VIN_NEG_CH4           ";
+		case MCP356X_MUX_VIN_NEG_CH3            : return "MCP356X_MUX_VIN_NEG_CH3           ";
+		case MCP356X_MUX_VIN_NEG_CH2            : return "MCP356X_MUX_VIN_NEG_CH2           ";
+		case MCP356X_MUX_VIN_NEG_CH1            : return "MCP356X_MUX_VIN_NEG_CH1           ";
+		case MCP356X_MUX_VIN_NEG_CH0            : return "MCP356X_MUX_VIN_NEG_CH0           ";
+		default: return "";
+	}
+}

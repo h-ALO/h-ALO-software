@@ -23,6 +23,30 @@ void MCP356X_log_REG_IRQ(uint32_t value)
 	LOG_INF("UNIMPLEMENTED: %i", !!(value & MCP356X_IRQ_MASK_UNIMPLEMENTED));
 }
 
+void MCP356X_log_REG_MUX(uint32_t value)
+{
+	LOG_INF("VIN_POS %s", MCP356X_MUX_POS_to_str(value & 0xF0));
+	LOG_INF("VIN_NEG %s", MCP356X_MUX_NEG_to_str(value & 0x0F));
+}
+
+void MCP356X_log_REG(uint32_t reg, uint32_t value)
+{
+	switch (reg)
+	{
+	case MCP356X_REG_IRQ:
+		MCP356X_log_REG_IRQ(value);
+		break;
+	case MCP356X_REG_MUX:
+		MCP356X_log_REG_MUX(value);
+		break;
+	default:
+		break;
+	}
+}
+
+
+
+
 int transceive(const struct spi_dt_spec *bus, uint8_t *tx, uint8_t *rx, uint8_t reg, uint8_t len, uint8_t cmd)
 {
 	struct spi_buf buf_tx[] = {{.buf = tx,.len = len+1}};
@@ -86,10 +110,7 @@ static int set(const struct spi_dt_spec *bus, uint8_t reg, uint32_t value)
 	uint32_t value2;
 	rv = get(bus, reg, &value2);
 	LOG_INF("Register set: %s: %08x %08x", MCP356X_REG_tostring(reg), value, value2);
-	if(reg == MCP356X_REG_IRQ)
-	{
-		MCP356X_log_REG_IRQ(value2);
-	}
+	MCP356X_log_REG(reg, value2);
 #endif
 return rv;
 }
