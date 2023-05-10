@@ -25,8 +25,8 @@ void MCP356X_log_REG_IRQ(uint32_t value)
 
 void MCP356X_log_REG_MUX(uint32_t value)
 {
-	LOG_INF("VIN_POS %s", MCP356X_MUX_POS_to_str(value & 0xF0));
-	LOG_INF("VIN_NEG %s", MCP356X_MUX_NEG_to_str(value & 0x0F));
+	LOG_INF("MCP356X_REG_MUX_VIN_POS: (%s)", MCP356X_MUX_POS_to_str(value));
+	LOG_INF("MCP356X_REG_MUX_VIN_NEG: (%s)", MCP356X_MUX_NEG_to_str(value));
 }
 
 void MCP356X_log_REG(uint32_t reg, uint32_t value)
