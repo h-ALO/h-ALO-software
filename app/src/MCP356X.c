@@ -242,3 +242,24 @@ char const * MCP356X_MUX_NEG_to_str(uint32_t value)
 		default: return "";
 	}
 }
+
+
+
+float MCP356X_raw_to_temperature(int32_t value)
+{
+	int32_t t_lsb = value;
+	float ret = 0.0;
+	if (0)
+	{
+		const double k1 = 0.0000000000000271 * (t_lsb * t_lsb * t_lsb);
+		const double k2 = -0.000000018 * (t_lsb * t_lsb);
+		const double k3 = 0.0055 * t_lsb;
+		const double k4 = -604.22;
+		ret = k1 + k2 + k3 + k4;
+	}
+	else
+	{
+		ret = 0.001581 * t_lsb - 324.27;
+	}
+	return ret;
+}

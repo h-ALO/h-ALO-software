@@ -525,3 +525,5 @@ uint8_t MCP356X_get_scan_channel_gain(uint8_t channel);
 
 char const * MCP356X_MUX_POS_to_str(uint32_t value);
 char const * MCP356X_MUX_NEG_to_str(uint32_t value);
+
+float MCP356X_raw_to_temperature(int32_t value);

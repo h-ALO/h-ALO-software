@@ -127,7 +127,7 @@ typedef struct
 void egadc_setup_adc(struct mcp356x_config * config)
 {
 	LOG_INF("Setting registers in MCP356X");
-
+	/*
 	egadc_regval_pair_t a[] = 
 	{
 		{MCP356X_REG_CFG_0, MCP356X_CFG_0_VREF_SEL_0 | MCP356X_CFG_0_CLK_SEL_2 | MCP356X_CFG_0_CS_SEL_0 | MCP356X_CFG_0_MODE_CONV},
@@ -146,6 +146,7 @@ void egadc_setup_adc(struct mcp356x_config * config)
 		{MCP356X_RSV_REG, 0},
 		{MCP356X_REG_CRC_CFG, 0},
 	};
+	*/
 
 	set(&config->bus, MCP356X_REG_LOCK, 0xA5); //Unlock
 	set(&config->bus, MCP356X_REG_CFG_0,

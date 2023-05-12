@@ -48,7 +48,7 @@ void app_print_voltage(struct mcp356x_config * c)
 
 void app_print_voltage_ref(struct mcp356x_config * c)
 {
-	LOG_INF("Checking voltage reference:");
+	LOG_INF("Checking voltage reference");
 	egadc_adc_value_reset(c);
 	egadc_set_mux(c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_VREF_EXT_PLUS);
 	int n = 10;
@@ -56,9 +56,36 @@ void app_print_voltage_ref(struct mcp356x_config * c)
 	{
 		app_print_voltage(c);
 		egadc_adc_value_reset(c);
-		k_sleep(K_MSEC(1000));
+		k_sleep(K_MSEC(500));
 	}
 }
+
+void app_print_temperature(struct mcp356x_config * c)
+{
+	egadc_adc_value_reset(c);
+	LOG_INF("Checking temperature MCP356X_MUX_VIN_POS_TEMP");
+	egadc_set_mux(c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_TEMP);
+	int n = 10;
+	while (n--)
+	{
+		int a = c->mv_iir[MCP356X_CH_CH0];
+		int32_t v = (MCP356X_raw_to_temperature(a) * 1000.0f);
+		printk("%08i %08i C\n", a, v);
+		k_sleep(K_MSEC(500));
+	}
+	LOG_INF("Checking temperature MCP356X_MUX_VIN_POS_VCM");
+	egadc_set_mux(c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_VCM);
+	n = 10;
+	while (n--)
+	{
+		int a = c->mv_iir[MCP356X_CH_CH0];
+		int32_t v = (MCP356X_raw_to_temperature(a) * 1000.0f);
+		printk("%08i %08i C\n", a, v);
+		k_sleep(K_MSEC(500));
+	}
+}
+
+
 
 
 
@@ -128,6 +155,7 @@ void main(void)
 			if(c.num_drdy > 0)
 			{
 				app_print_voltage_ref(&c);
+				app_print_temperature(&c);
 				//egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
 				egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0);
 				appstate = APP_PRINT_ADC;
