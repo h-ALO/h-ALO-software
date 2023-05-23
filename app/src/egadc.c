@@ -387,7 +387,6 @@ void egadc_adc_value_reset(struct mcp356x_config * config)
 	config->num_irq = 0;
 	config->mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
 	config->mv_min[MCP356X_CH_CH0] = INT32_MAX; // Reset min
-	config->mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
 }
 
 

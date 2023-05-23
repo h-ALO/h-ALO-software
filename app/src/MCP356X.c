@@ -199,9 +199,9 @@ char const * MCP356X_MUX_POS_to_str(uint32_t value)
 {
 	switch(value & 0xF0)
 	{
-		case MCP356X_MUX_VIN_POS_NO_IN          : return "NO_IN         ";
 		case MCP356X_MUX_VIN_POS_VCM            : return "VCM           ";
-		case MCP356X_MUX_VIN_POS_TEMP           : return "TEMP          ";
+		case MCP356X_MUX_VIN_POS_TEMP_M         : return "TEMP_M        ";
+		case MCP356X_MUX_VIN_POS_TEMP_P         : return "TEMP_P        ";
 		case MCP356X_MUX_VIN_POS_VREF_EXT_MINUS : return "VREF_EXT_MINUS";
 		case MCP356X_MUX_VIN_POS_VREF_EXT_PLUS  : return "VREF_EXT_PLUS ";
 		case MCP356X_MUX_VIN_POS_VREF_INT       : return "VREF_INT      ";
@@ -223,9 +223,9 @@ char const * MCP356X_MUX_NEG_to_str(uint32_t value)
 {
 	switch(value & 0x0F)
 	{
-		case MCP356X_MUX_VIN_NEG_NO_IN          : return "NO_IN         ";
 		case MCP356X_MUX_VIN_NEG_VCM            : return "VCM           ";
-		case MCP356X_MUX_VIN_NEG_TEMP           : return "TEMP          ";
+		case MCP356X_MUX_VIN_NEG_TEMP_M         : return "TEMP_M        ";
+		case MCP356X_MUX_VIN_NEG_TEMP_P         : return "TEMP_P        ";
 		case MCP356X_MUX_VIN_NEG_VREF_EXT_MINUS : return "VREF_EXT_MINUS";
 		case MCP356X_MUX_VIN_NEG_VREF_EXT_PLUS  : return "VREF_EXT_PLUS ";
 		case MCP356X_MUX_VIN_NEG_VREF_INT       : return "VREF_INT      ";

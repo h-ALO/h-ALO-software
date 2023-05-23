@@ -334,9 +334,9 @@ for conversion start pulse
 Analog multiplexer input selection (MUX mode only)
 *******************************************************************/
 // Bit 7-4 MUX_VIN+ Input Selection
-#define MCP356X_MUX_VIN_POS_NO_IN            0xF0 // 1111 0000 Internal VCM
-#define MCP356X_MUX_VIN_POS_VCM              0xE0 // 1110 0000 Internal Temperature Sensor Diode M (Temp Diode M)(1)
-#define MCP356X_MUX_VIN_POS_TEMP             0xD0 // 1101 0000 Internal Temperature Sensor Diode P (Temp Diode P)(1)
+#define MCP356X_MUX_VIN_POS_VCM              0xF0 // 1111 0000 Internal VCM
+#define MCP356X_MUX_VIN_POS_TEMP_M           0xE0 // 1110 0000 Internal Temperature Sensor Diode M (Temp Diode M)(1)
+#define MCP356X_MUX_VIN_POS_TEMP_P           0xD0 // 1101 0000 Internal Temperature Sensor Diode P (Temp Diode P)(1)
 #define MCP356X_MUX_VIN_POS_VREF_EXT_MINUS   0xC0 // 1100 0000
 #define MCP356X_MUX_VIN_POS_VREF_EXT_PLUS    0xB0 // 1011 0000
 #define MCP356X_MUX_VIN_POS_VREF_INT         0xA0 // 1010 0000 Reserved (do not use)
@@ -351,9 +351,9 @@ Analog multiplexer input selection (MUX mode only)
 #define MCP356X_MUX_VIN_POS_CH1              0x10 // 0001 0000
 #define MCP356X_MUX_VIN_POS_CH0              0x00 // 0000 0000
 // Bit 3-0 MUX_VIN- Input Selection
-#define MCP356X_MUX_VIN_NEG_NO_IN            0x0F // 0000 1111
-#define MCP356X_MUX_VIN_NEG_VCM              0x0E // 0000 1110 Internal Temperature Sensor Diode M (Temp Diode M)(1)
-#define MCP356X_MUX_VIN_NEG_TEMP             0x0D // 0000 1101 Internal Temperature Sensor Diode P (Temp Diode P)(1)
+#define MCP356X_MUX_VIN_NEG_VCM              0x0F // 0000 1111
+#define MCP356X_MUX_VIN_NEG_TEMP_M           0x0E // 0000 1110 Internal Temperature Sensor Diode M (Temp Diode M)(1)
+#define MCP356X_MUX_VIN_NEG_TEMP_P           0x0D // 0000 1101 Internal Temperature Sensor Diode P (Temp Diode P)(1)
 #define MCP356X_MUX_VIN_NEG_VREF_EXT_MINUS   0x0C // 0000 1100
 #define MCP356X_MUX_VIN_NEG_VREF_EXT_PLUS    0x0B // 0000 1011
 #define MCP356X_MUX_VIN_NEG_VREF_INT         0x0A // 0000 1010 Reserved (do not use)
