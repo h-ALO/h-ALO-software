@@ -21,9 +21,9 @@ struct mcp356x_config
 	int num_irq;
 	int num_drdy;
 
-	int mv_iir[MCP356X_CHANNEL_COUNT];
-	int mv_min[MCP356X_CHANNEL_COUNT];
-	int mv_max[MCP356X_CHANNEL_COUNT];
+	int raw_iir[MCP356X_CHANNEL_COUNT];
+	int raw_min[MCP356X_CHANNEL_COUNT];
+	int raw_max[MCP356X_CHANNEL_COUNT];
 
 	int is_scan;
 	uint8_t gain_reg; // Gain register value
@@ -34,7 +34,8 @@ struct mcp356x_config
 
 int egadc_setup_board(struct mcp356x_config * config);
 void egadc_setup_adc(struct mcp356x_config * config);
-void egadc_set_mux(struct mcp356x_config * config, uint32_t mux);
+void egadc_set_ch(struct mcp356x_config * config, uint8_t ch);
+void egadc_set_mux(struct mcp356x_config * config, uint8_t mux);
 
 void egadc_adc_value_reset(struct mcp356x_config * config);
 int egadc_log_REG_IRQ(const struct spi_dt_spec *bus, uint8_t reg);

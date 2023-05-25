@@ -245,11 +245,15 @@ void egadc_setup_adc(struct mcp356x_config * config)
 }
 
 
-
-
-
-void egadc_set_mux(struct mcp356x_config * config, uint32_t mux)
+void egadc_set_mux(struct mcp356x_config * config, uint8_t mux)
 {
+	set(&config->bus, MCP356X_REG_MUX, mux);
+}
+
+
+void egadc_set_ch(struct mcp356x_config * config, uint8_t ch)
+{
+	uint8_t mux = MCP356X_channel_to_mux(ch);
 	set(&config->bus, MCP356X_REG_MUX, mux);
 }
 
@@ -317,12 +321,11 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 			gain_reg = MCP356X_get_scan_channel_gain(channel);
 		}
 
-		int32_t mv = MCP356X_raw_to_millivolt(value, config->vref_mv, gain_reg);
 		// https://dsp.stackexchange.com/questions/66171/single-pole-iir-filter-fixed-point-design
 		// efficient implementation of IIR1 alpha = 1/2:
-		config->mv_iir[channel] = (config->mv_iir[channel] + mv) >> 1;
-		config->mv_max[channel] = MAX(config->mv_max[channel], mv);
-		config->mv_min[channel] = MIN(config->mv_min[channel], mv);
+		config->raw_iir[channel] = (config->raw_iir[channel] + value) >> 1;
+		config->raw_max[channel] = MAX(config->raw_max[channel], value);
+		config->raw_min[channel] = MIN(config->raw_min[channel], value);
 	}
 }
 
@@ -385,8 +388,8 @@ void egadc_adc_value_reset(struct mcp356x_config * config)
 {
 	config->num_drdy = 0;
 	config->num_irq = 0;
-	config->mv_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
-	config->mv_min[MCP356X_CH_CH0] = INT32_MAX; // Reset min
+	config->raw_max[MCP356X_CH_CH0] = INT32_MIN; // Reset max
+	config->raw_min[MCP356X_CH_CH0] = INT32_MAX; // Reset min
 }
 
 

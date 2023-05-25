@@ -244,22 +244,52 @@ char const * MCP356X_MUX_NEG_to_str(uint32_t value)
 }
 
 
-
-float MCP356X_raw_to_temperature(int32_t value)
+// DS20006181C-page 34
+// EQUATION 5-1: TEMPERATURE SENSOR TRANSFER FUNCTION
+double MCP356X_ADCDATA_to_temperature_o1(int32_t adcdata)
 {
-	int32_t t_lsb = value;
-	float ret = 0.0;
-	if (0)
-	{
-		const double k1 = 0.0000000000000271 * (t_lsb * t_lsb * t_lsb);
-		const double k2 = -0.000000018 * (t_lsb * t_lsb);
-		const double k3 = 0.0055 * t_lsb;
-		const double k4 = -604.22;
-		ret = k1 + k2 + k3 + k4;
-	}
-	else
-	{
-		ret = 0.001581 * t_lsb - 324.27;
-	}
+	float ret = 0.00133 * adcdata - 267.146;
 	return ret;
+}
+
+double MCP356X_ADCDATA_to_temperature_o3(int32_t adcdata)
+{
+	const double a3 = -3.904E-15;
+	const double a2 = 3.814E-9;
+	const double a1 = 0.0002;
+	double ret = 
+	a1 * (adcdata * adcdata * adcdata) + 
+	a2 * (adcdata * adcdata) + 
+	a3 * (adcdata) - 163.978;
+	return ret;
+}
+
+
+
+
+
+
+// TABLE 5-14: ADC CHANNEL SELECTION
+// DS20006181C-page 54
+uint8_t MCP356X_channel_to_mux(uint8_t channel)
+{
+	switch (channel)
+	{
+	case MCP356X_CH_CH0: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH1: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH2: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH3: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH4: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH5: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH6: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_DIFF_A: return MCP356X_MUX_VIN_NEG_CH1 | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_DIFF_B: return MCP356X_MUX_VIN_NEG_CH3 | MCP356X_MUX_VIN_POS_CH2;
+	case MCP356X_CH_DIFF_C: return MCP356X_MUX_VIN_NEG_CH5 | MCP356X_MUX_VIN_POS_CH4;
+	case MCP356X_CH_DIFF_D: return MCP356X_MUX_VIN_NEG_CH7 | MCP356X_MUX_VIN_POS_CH6;
+	case MCP356X_CH_TEMP: return MCP356X_MUX_VIN_NEG_TEMP_M | MCP356X_MUX_VIN_POS_TEMP_P;
+	case MCP356X_CH_AVDD: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_AVDD;
+	case MCP356X_CH_VCM: return MCP356X_MUX_VIN_NEG_VCM | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_OFFSET: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_NEG_AGND;
+	}
+	return 0;
 }

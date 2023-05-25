@@ -43,7 +43,11 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 void app_print_voltage(struct mcp356x_config * c)
 {
 	int index = MCP356X_CH_CH0;
-	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, c->mv_iir[index], c->mv_min[index], c->mv_max[index], c->mv_max[index] - c->mv_min[index]);
+	int32_t mv_iir = MCP356X_raw_to_millivolt(c->raw_iir[index], c->vref_mv, c->gain_reg);
+	int32_t mv_min = MCP356X_raw_to_millivolt(c->raw_min[index], c->vref_mv, c->gain_reg);
+	int32_t mv_max = MCP356X_raw_to_millivolt(c->raw_max[index], c->vref_mv, c->gain_reg);
+	int32_t mv_pp = mv_max - mv_min;
+	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, mv_iir, mv_min, mv_max, mv_pp);
 }
 
 void app_print_voltage_ref(struct mcp356x_config * c)
@@ -64,13 +68,21 @@ void app_print_temperature(struct mcp356x_config * c)
 {
 	egadc_adc_value_reset(c);
 	LOG_INF("Checking temperature MCP356X_MUX_VIN_POS_TEMP");
-	egadc_set_mux(c, MCP356X_MUX_VIN_NEG_TEMP_M | MCP356X_MUX_VIN_POS_TEMP_P);
+	egadc_set_ch(c, MCP356X_CH_TEMP);
 	int n = 10;
 	while (n--)
 	{
-		int voltage = c->mv_iir[MCP356X_CH_CH0];
-		int32_t celcius = (MCP356X_raw_to_temperature(voltage) * 1000.0f);
-		printk("%04i %04i C\n", voltage, celcius);
+		int raw = c->raw_iir[MCP356X_CH_CH0];
+		// TODO: I can't figure out why datasheet temperature transfer function does not work.
+		//double celcius  = MCP356X_ADCDATA_to_temperature_o1(raw);
+		//double celcius  = MCP356X_ADCDATA_to_temperature_o3(raw);
+
+		// If we convert raw ADCDATA to millivolt then use datasheet celsius to mv function (we get correct temperature?)
+		// https://www.eevblog.com/forum/microcontrollers/problems-with-internal-temperature-sensor-mcp3561/
+		int32_t mv = MCP356X_raw_to_millivolt(raw, c->vref_mv, c->gain_reg);
+		double celcius = ((double)mv -79.32) / 0.2964;
+		printf("%08i %f C\n", raw, celcius);
+		//printf("%04i %f C\n", voltage, celcius * (c->vref_mv / 3.3));
 		k_sleep(K_MSEC(500));
 	}
 }
@@ -98,7 +110,8 @@ struct mcp356x_config c =
 	.bus = SPI_DT_SPEC_GET(DT_NODELABEL(examplesensor0), SPI_WORD_SET(8) | SPI_MODE_GET(0), 1),
 	.irq = GPIO_DT_SPEC_GET(DT_NODELABEL(examplesensor0), irq_gpios),
 	.is_scan = false,
-	.gain_reg = MCP356X_CFG_2_GAIN_X_033,
+	//.gain_reg = MCP356X_CFG_2_GAIN_X_033,
+	.gain_reg = MCP356X_CFG_2_GAIN_X_1,
 	.vref_mv = TIABT_VREF
 };
 
@@ -146,8 +159,7 @@ void main(void)
 			{
 				app_print_voltage_ref(&c);
 				app_print_temperature(&c);
-				//egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
-				egadc_set_mux(&c, MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5);
+				egadc_set_ch(&c, MCP356X_CH_CH0);
 				appstate = APP_PRINT_ADC;
 			}
 			break;

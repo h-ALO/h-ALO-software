@@ -4,7 +4,7 @@
 // https://github.com/MikroElektronika/mikrosdk_click_v2
 // https://github.com/MikroElektronika/mikrosdk_click_v2/tree/master/clicks/adc9
 // https://github.com/jspark311/MCP356x-Breakout/blob/6cc57254ad991eba59b2607941b86dc148f06eaf/Arduino/src/MCP356x.cpp
-
+// 
 
 
 
@@ -437,7 +437,7 @@ Differential Channel D (CH6-CH7) 1011 0x67 None
 
 #define MCP356X_CHANNEL_COUNT 16
 #define MCP356X_CH_OFFSET   15
-#define MCP356X_CH_VCM     14
+#define MCP356X_CH_VCM      14
 #define MCP356X_CH_AVDD     13
 #define MCP356X_CH_TEMP     12
 #define MCP356X_CH_DIFF_D   11 // Differential Channel D (CH6-CH7)
@@ -520,10 +520,12 @@ uint32_t MCP356X_get_len(uint8_t reg);
 uint32_t MCP356X_get_value(uint8_t rx[5], uint8_t len);
 void MCP356X_set_value(uint8_t tx[5], uint8_t len, uint32_t value);
 uint8_t MCP356X_get_scan_channel_gain(uint8_t channel);
+uint8_t MCP356X_channel_to_mux(uint8_t channel);
 
 
 
 char const * MCP356X_MUX_POS_to_str(uint32_t value);
 char const * MCP356X_MUX_NEG_to_str(uint32_t value);
 
-float MCP356X_raw_to_temperature(int32_t value);
+double MCP356X_ADCDATA_to_temperature_o1(int32_t adcdata);
+double MCP356X_ADCDATA_to_temperature_o3(int32_t adcdata);
