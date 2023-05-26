@@ -21,13 +21,12 @@ struct mcp356x_config
 	int num_irq;
 	int num_drdy;
 
-	int raw_iir[MCP356X_CHANNEL_COUNT];
-	int raw_min[MCP356X_CHANNEL_COUNT];
-	int raw_max[MCP356X_CHANNEL_COUNT];
+	int32_t raw_iir[MCP356X_CHANNEL_COUNT];
+	int32_t raw_min[MCP356X_CHANNEL_COUNT];
+	int32_t raw_max[MCP356X_CHANNEL_COUNT];
 
 	int is_scan;
 	uint8_t gain_reg; // Gain register value
-	uint16_t vref_mv; // Voltage reference millivolt value
 	K_KERNEL_STACK_MEMBER(stack, ADC_MCP356X_ACQUISITION_THREAD_STACK_SIZE);
 };
 

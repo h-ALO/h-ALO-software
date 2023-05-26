@@ -323,7 +323,7 @@ static void mcp356x_acquisition_thread(struct mcp356x_config * config)
 
 		// https://dsp.stackexchange.com/questions/66171/single-pole-iir-filter-fixed-point-design
 		// efficient implementation of IIR1 alpha = 1/2:
-		config->raw_iir[channel] = (config->raw_iir[channel] + value) >> 1;
+		config->raw_iir[channel] = ((int64_t)config->raw_iir[channel] + (int64_t)value) >> 1;
 		config->raw_max[channel] = MAX(config->raw_max[channel], value);
 		config->raw_min[channel] = MIN(config->raw_min[channel], value);
 	}

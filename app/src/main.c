@@ -24,6 +24,8 @@ west build -b nucleo_wb55rg
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/spi.h>
 #include <stdint.h>
+#include <stdio.h>
+
 
 #include "app_version.h"
 #include "egadc.h"
@@ -35,19 +37,19 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 
 // The ADC9 uses 2000mV voltage ref chip MCP1501
-#define ADC9_VREF 2048
-#define TIABT_VREF 3000
+#define ADC9_VREF_MICRO_VOLT 2048*1000
+#define TIABT_VREF_MICRO_VOLT 3000*1000
 
 
 
 void app_print_voltage(struct mcp356x_config * c)
 {
 	int index = MCP356X_CH_CH0;
-	int32_t mv_iir = MCP356X_raw_to_millivolt(c->raw_iir[index], c->vref_mv, c->gain_reg);
-	int32_t mv_min = MCP356X_raw_to_millivolt(c->raw_min[index], c->vref_mv, c->gain_reg);
-	int32_t mv_max = MCP356X_raw_to_millivolt(c->raw_max[index], c->vref_mv, c->gain_reg);
-	int32_t mv_pp = mv_max - mv_min;
-	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, mv_iir, mv_min, mv_max, mv_pp);
+	int32_t v_iir = MCP356X_raw_to_volt(c->raw_iir[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
+	int32_t v_min = MCP356X_raw_to_volt(c->raw_min[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
+	int32_t v_max = MCP356X_raw_to_volt(c->raw_max[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
+	int32_t v_pp = v_max - v_min;
+	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, v_iir, v_min, v_max, v_pp);
 }
 
 void app_print_voltage_ref(struct mcp356x_config * c)
@@ -74,14 +76,14 @@ void app_print_temperature(struct mcp356x_config * c)
 	{
 		int raw = c->raw_iir[MCP356X_CH_CH0];
 		// TODO: I can't figure out why datasheet temperature transfer function does not work.
-		//double celcius  = MCP356X_ADCDATA_to_temperature_o1(raw);
+		//double celsius  = MCP356X_ADCDATA_to_temperature_o1(raw) * ((double)TIABT_VREF/(double)3300);
 		//double celcius  = MCP356X_ADCDATA_to_temperature_o3(raw);
 
 		// If we convert raw ADCDATA to millivolt then use datasheet celsius to mv function (we get correct temperature?)
 		// https://www.eevblog.com/forum/microcontrollers/problems-with-internal-temperature-sensor-mcp3561/
-		int32_t mv = MCP356X_raw_to_millivolt(raw, c->vref_mv, c->gain_reg);
-		double celcius = ((double)mv -79.32) / 0.2964;
-		printf("%08i %f C\n", raw, celcius);
+		int32_t v = MCP356X_raw_to_volt(raw, TIABT_VREF_MICRO_VOLT, c->gain_reg);
+		double celsius = ((double)v -79.32) / (0.2964*10000);
+		printf("%08i %08i %20.10f C\n", raw, v, celsius);
 		//printf("%04i %f C\n", voltage, celcius * (c->vref_mv / 3.3));
 		k_sleep(K_MSEC(500));
 	}
@@ -112,7 +114,6 @@ struct mcp356x_config c =
 	.is_scan = false,
 	//.gain_reg = MCP356X_CFG_2_GAIN_X_033,
 	.gain_reg = MCP356X_CFG_2_GAIN_X_1,
-	.vref_mv = TIABT_VREF
 };
 
 
@@ -159,7 +160,7 @@ void main(void)
 			{
 				app_print_voltage_ref(&c);
 				app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH0);
+				egadc_set_ch(&c, MCP356X_CH_CH5);
 				appstate = APP_PRINT_ADC;
 			}
 			break;

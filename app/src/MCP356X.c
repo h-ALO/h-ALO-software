@@ -39,6 +39,14 @@ char const * MCP356X_REG_tostring(int a)
 010 = Gain is x2
 001 = Gain is x1 (default)
 000 = Gain is x1/3
+
+
+Formula
+
+ADC * VREF / (COEF * GAIN)
+
+
+
 */
 
 int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, uint8_t gain_reg)
@@ -59,6 +67,31 @@ int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, uint8_t gain_reg)
 	mv = raw / c;
 	return mv;
 }
+
+
+int64_t MCP356X_raw_to_volt(int32_t raw, int32_t vref, uint8_t gain_reg)
+{
+	//return MCP356X_raw_to_millivolt(raw, vref, gain_reg);
+	int64_t numerator = (int64_t)raw * (int64_t)vref;
+	int64_t denominator = MCP356X_CALC_COEF;
+	switch(gain_reg)
+	{
+	case MCP356X_CFG_2_GAIN_X_64  : denominator *= 64; break;
+	case MCP356X_CFG_2_GAIN_X_32  : denominator *= 32; break;
+	case MCP356X_CFG_2_GAIN_X_16  : denominator *= 16; break;
+	case MCP356X_CFG_2_GAIN_X_8   : denominator *= 8; break;
+	case MCP356X_CFG_2_GAIN_X_4   : denominator *= 4; break;
+	case MCP356X_CFG_2_GAIN_X_2   : denominator *= 2; break;
+	case MCP356X_CFG_2_GAIN_X_1   : denominator *= 1; break;
+	case MCP356X_CFG_2_GAIN_X_033 : denominator /= 3; break;
+	}
+	int64_t result = numerator / denominator;
+	return result;
+}
+
+
+
+
 
 /*
 In DATA_FORMAT[1:0] = 11, the output code is similar
@@ -276,12 +309,12 @@ uint8_t MCP356X_channel_to_mux(uint8_t channel)
 	switch (channel)
 	{
 	case MCP356X_CH_CH0: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH1: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH2: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH3: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH4: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH5: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
-	case MCP356X_CH_CH6: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH0;
+	case MCP356X_CH_CH1: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH1;
+	case MCP356X_CH_CH2: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH2;
+	case MCP356X_CH_CH3: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH3;
+	case MCP356X_CH_CH4: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH4;
+	case MCP356X_CH_CH5: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH5;
+	case MCP356X_CH_CH6: return MCP356X_MUX_VIN_NEG_AGND | MCP356X_MUX_VIN_POS_CH6;
 	case MCP356X_CH_DIFF_A: return MCP356X_MUX_VIN_NEG_CH1 | MCP356X_MUX_VIN_POS_CH0;
 	case MCP356X_CH_DIFF_B: return MCP356X_MUX_VIN_NEG_CH3 | MCP356X_MUX_VIN_POS_CH2;
 	case MCP356X_CH_DIFF_C: return MCP356X_MUX_VIN_NEG_CH5 | MCP356X_MUX_VIN_POS_CH4;

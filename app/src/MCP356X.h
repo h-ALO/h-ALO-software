@@ -514,7 +514,9 @@ Differential Channel D (CH6-CH7) 1011 0x67 None
 
 
 char const * MCP356X_REG_tostring(int a);
-int32_t MCP356X_raw_to_millivolt(int32_t raw, int32_t vref_mv, uint8_t gain_reg);
+
+int64_t MCP356X_raw_to_volt(int32_t raw, int32_t vref, uint8_t gain_reg);
+
 void MCP356X_ADC_DATA_decode_11(uint8_t rx[5], int32_t * out_value, uint8_t * out_channel);
 uint32_t MCP356X_get_len(uint8_t reg);
 uint32_t MCP356X_get_value(uint8_t rx[5], uint8_t len);
