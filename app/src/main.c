@@ -158,9 +158,9 @@ void main(void)
 			k_sleep(K_MSEC(1000));
 			if(c.num_drdy > 0)
 			{
-				app_print_voltage_ref(&c);
-				app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH5);
+				//app_print_voltage_ref(&c);
+				//app_print_temperature(&c);
+				egadc_set_ch(&c, MCP356X_CH_CH0);
 				appstate = APP_PRINT_ADC;
 			}
 			break;

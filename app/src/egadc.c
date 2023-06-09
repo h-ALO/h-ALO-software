@@ -13,20 +13,20 @@ LOG_MODULE_REGISTER(adc_mcp356x, LOG_LEVEL_DBG);
 
 void MCP356X_log_REG_IRQ(uint32_t value)
 {
-	LOG_INF("EN_STP:        %i", !!(value & MCP356X_IRQ_MASK_EN_STP));
-	LOG_INF("EN_FASTCMD:    %i", !!(value & MCP356X_IRQ_MASK_EN_FASTCMD));
-	LOG_INF("MODE0:         %i", !!(value & MCP356X_IRQ_MASK_MODE0));
-	LOG_INF("MODE1:         %i", !!(value & MCP356X_IRQ_MASK_MODE1));
-	LOG_INF("POR_STATUS:    %i", !!(value & MCP356X_IRQ_MASK_POR_STATUS));
-	LOG_INF("CRCCFG_STATUS: %i", !!(value & MCP356X_IRQ_MASK_CRCCFG_STATUS));
-	LOG_INF("DR_STATUS:     %i", !!(value & MCP356X_IRQ_MASK_DR_STATUS));
-	LOG_INF("UNIMPLEMENTED: %i", !!(value & MCP356X_IRQ_MASK_UNIMPLEMENTED));
+	LOG_INF("MCP356X_IRQ_MASK_EN_STP:        %i", !!(value & MCP356X_IRQ_MASK_EN_STP));
+	LOG_INF("MCP356X_IRQ_MASK_EN_FASTCMD:    %i", !!(value & MCP356X_IRQ_MASK_EN_FASTCMD));
+	LOG_INF("MCP356X_IRQ_MASK_MODE0:         %i", !!(value & MCP356X_IRQ_MASK_MODE0));
+	LOG_INF("MCP356X_IRQ_MASK_MODE1:         %i", !!(value & MCP356X_IRQ_MASK_MODE1));
+	LOG_INF("MCP356X_IRQ_MASK_POR_STATUS:    %i", !!(value & MCP356X_IRQ_MASK_POR_STATUS));
+	LOG_INF("MCP356X_IRQ_MASK_CRCCFG_STATUS: %i", !!(value & MCP356X_IRQ_MASK_CRCCFG_STATUS));
+	LOG_INF("MCP356X_IRQ_MASK_DR_STATUS:     %i", !!(value & MCP356X_IRQ_MASK_DR_STATUS));
+	LOG_INF("MCP356X_IRQ_MASK_UNIMPLEMENTED: %i", !!(value & MCP356X_IRQ_MASK_UNIMPLEMENTED));
 }
 
 void MCP356X_log_REG_MUX(uint32_t value)
 {
-	LOG_INF("MCP356X_REG_MUX_VIN_POS: (%s)", MCP356X_MUX_POS_to_str(value));
-	LOG_INF("MCP356X_REG_MUX_VIN_NEG: (%s)", MCP356X_MUX_NEG_to_str(value));
+	LOG_INF("MCP356X_REG_MUX_VIN_POS: %s", MCP356X_MUX_POS_to_str(value));
+	LOG_INF("MCP356X_REG_MUX_VIN_NEG: %s", MCP356X_MUX_NEG_to_str(value));
 }
 
 void MCP356X_log_REG(uint32_t reg, uint32_t value)
@@ -109,7 +109,7 @@ static int set(const struct spi_dt_spec *bus, uint8_t reg, uint32_t value)
 #ifdef MCP356X_LOG_SET_VALUE
 	uint32_t value2;
 	rv = get(bus, reg, &value2);
-	LOG_INF("Register set: %s: %08x %08x", MCP356X_REG_tostring(reg), value, value2);
+	LOG_INF("%s: write:%08x read:%08x", MCP356X_REG_tostring(reg), value, value2);
 	MCP356X_log_REG(reg, value2);
 #endif
 return rv;
