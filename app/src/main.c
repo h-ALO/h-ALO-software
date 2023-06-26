@@ -49,7 +49,7 @@ void app_print_voltage(struct mcp356x_config * c)
 	int32_t v_min = MCP356X_raw_to_volt(c->raw_min[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
 	int32_t v_max = MCP356X_raw_to_volt(c->raw_max[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
 	int32_t v_pp = v_max - v_min;
-	printk("IRQ:%-3i DRDY:%-3i avg:%-4i min:%-4i max:%-4i pp:%-4i\n", c->num_irq, c->num_drdy, v_iir, v_min, v_max, v_pp);
+	printk("IRQ:%-3i DRDY:%-3i avg:%-8i min:%-8i max:%-8i pp:%-8i\n", c->num_irq, c->num_drdy, v_iir, v_min, v_max, v_pp);
 }
 
 void app_print_voltage_ref(struct mcp356x_config * c)
@@ -117,16 +117,22 @@ struct mcp356x_config c =
 };
 
 
+/* 1000 msec = 1 sec */
+#define SLEEP_TIME_MS   1000
+
+/* The devicetree node identifier for the "led0" alias. */
+#define LED0_NODE DT_ALIAS(led0)
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
 
-void main(void)
+int main(void)
 {
 	LOG_INF("Zephyr Example Application %s", "" DT_NODE_PATH(DT_NODELABEL(examplesensor0)));
 
 	if (!spi_is_ready_dt(&c.bus))
 	{
 		LOG_ERR("SPI bus is not ready %i", 0);
-		return;
+		return 0;
 	}
 
 	//mybt_init();
@@ -139,11 +145,28 @@ void main(void)
 		k_sleep(K_MSEC(1000));
 	}
 
+	{
+		int ret;
+		if (!gpio_is_ready_dt(&led)) {
+			return 0;
+		}
+		ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+		if (ret < 0) {
+			return 0;
+		}
+	}
+
+
 
 	int appstate = APP_START;
 
 	while (1)
 	{
+		{
+			int ret = gpio_pin_toggle_dt(&led);
+			if (ret < 0) {return 0;}
+		}
+
 		if(c.status & EGADC_TIMEOUT_BIT)
 		{
 			appstate = APP_INIT_ADC;
@@ -155,13 +178,17 @@ void main(void)
 		{
 		case APP_WAITING:
 			LOG_INF("APP_WAITING");
-			k_sleep(K_MSEC(1000));
 			if(c.num_drdy > 0)
 			{
 				//app_print_voltage_ref(&c);
 				//app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH0);
+				egadc_set_ch(&c, MCP356X_CH_CH5);
 				appstate = APP_PRINT_ADC;
+			}
+			else
+			{
+				LOG_INF("No respond from ADC");
+				k_sleep(K_MSEC(1000));
 			}
 			break;
 
@@ -210,4 +237,5 @@ void main(void)
 		//k_sem_give(&c.acq_sem);
 	}
 }
+
 
