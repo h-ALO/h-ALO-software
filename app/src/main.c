@@ -193,7 +193,7 @@ int main(void)
 			{
 				//app_print_voltage_ref(&c);
 				//app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH5);
+				egadc_set_ch(&c, MCP356X_CH_CH4);
 				appstate = APP_PRINT_ADC;
 			}
 			else

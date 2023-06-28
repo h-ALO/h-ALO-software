@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.animation import FuncAnimation
-
+import matplotlib.ticker as ticker
 
 j = 0
 
@@ -19,7 +19,7 @@ def update(i, f, xdata, ydata, ln):
     pullData = f.read()
     dataArray = pullData.split('\n')
     for eachLine in dataArray:
-        if len(eachLine)>1:
+        if len(eachLine)>1 and eachLine.startswith("IRQ:"):
             g = eachLine.split()
             val_avg = int(g[2].split(':')[1])
             val_min = int(g[3].split(':')[1])
@@ -41,14 +41,24 @@ def update(i, f, xdata, ydata, ln):
 
 
 fig, ax = plt.subplots()
-ax.set(xlim=(None, 1e5), ylim=(None, 1e6), title='ADC', xlabel='Time (s)', ylabel='Voltage (µV)')
+ax.set(xlim=(None, 1e4), ylim=(None, 5e6), title='ADC', xlabel='Time (s)', ylabel='Voltage (µV)')
 #ax.set(xlim=(None, 1e5), ylim=(None, 1e6), title='ADC', xlabel='Time (s)', ylabel='Ampere (pA)')
+#ax.xaxis.set_major_locator(AutoMinorLocator(10))
+#ax.xaxis.set_minor_locator(AutoMinorLocator(1))
+#ax.xaxis.set_major_locator(ticker.AutoLocator())
+#ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())
+#ax.xaxis.set_major_locator(ticker.MultipleLocator(100))
+#ax.xaxis.set_minor_locator(ticker.MultipleLocator(10))
+ax.xaxis.set_major_locator(ticker.MaxNLocator(10))
+ax.xaxis.set_minor_locator(ticker.MaxNLocator(100))
+#plt.xticks(np.arange(0, 1e4, 5))
+ax.grid(True)
 xdata = []
 ydata = [[],[],[]] # Avg, Min, Max
 ln, = plt.plot([], [], lw=2)
-#f = open("C:/Users/JohanSA/Documents/YAT/YAT-Log-20230626-171333.log","r")
+f = open("C:/Users/JohanSA/Documents/YAT/YAT-Log-20230628-165234.log","r")
 #f = open("YAT-Log-20230626-171849.log","r")
-f = open("YAT-Log-20230622-130141.log","r")
+#f = open("YAT-Log-20230622-130141.log","r")
 #plt.xticks(rotation=45, ha='right')
 #plt.subplots_adjust(bottom=0.30)
 #plt.title('TMP102 Temperature over Time')
