@@ -116,13 +116,21 @@ struct mcp356x_config c =
 	.gain_reg = MCP356X_CFG_2_GAIN_X_1,
 };
 
+enum my_leds
+{
+	MY_LEDS_OTHER,
+	MY_LEDS_BEATS,
+	MY_LEDS_WAITING,
+	MY_LEDS_COUNT
+};
 
-/* 1000 msec = 1 sec */
-#define SLEEP_TIME_MS   1000
-
-/* The devicetree node identifier for the "led0" alias. */
-#define LED0_NODE DT_ALIAS(led0)
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
+#define LEDS_COUNT 3
+static const struct gpio_dt_spec leds[LEDS_COUNT] = 
+{
+	GPIO_DT_SPEC_GET(DT_NODELABEL(blue_led_1), gpios),
+	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_2), gpios),
+	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_3), gpios),
+};
 
 
 int main(void)
@@ -145,25 +153,29 @@ int main(void)
 		k_sleep(K_MSEC(1000));
 	}
 
+
+	for(int i = 0; i < LEDS_COUNT; ++i)
 	{
 		int ret;
-		if (!gpio_is_ready_dt(&led)) {
-			return 0;
-		}
-		ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
-		if (ret < 0) {
-			return 0;
-		}
+		if (!gpio_is_ready_dt(leds+i)) {return 0;}
+		ret = gpio_pin_configure_dt(leds+i, GPIO_OUTPUT_ACTIVE);
+		if (ret < 0) {return 0;}
+		ret = gpio_pin_set_dt(leds+i,1);
+		if (ret < 0) {return 0;}
 	}
-
-
+	k_sleep(K_MSEC(500));
+	for(int i = 0; i < LEDS_COUNT; ++i)
+	{
+		int ret = gpio_pin_set_dt(leds+i,0);
+		if (ret < 0) {return 0;}
+	}
 
 	int appstate = APP_START;
 
 	while (1)
 	{
 		{
-			int ret = gpio_pin_toggle_dt(&led);
+			int ret = gpio_pin_toggle_dt(leds+MY_LEDS_BEATS);
 			if (ret < 0) {return 0;}
 		}
 
@@ -177,7 +189,6 @@ int main(void)
 		switch (appstate)
 		{
 		case APP_WAITING:
-			LOG_INF("APP_WAITING");
 			if(c.num_drdy > 0)
 			{
 				//app_print_voltage_ref(&c);
@@ -187,8 +198,11 @@ int main(void)
 			}
 			else
 			{
-				LOG_INF("No respond from ADC");
-				k_sleep(K_MSEC(1000));
+				LOG_INF("APP_WAITING No respond from ADC");
+				gpio_pin_set_dt(leds + MY_LEDS_WAITING, 1);
+				k_sleep(K_MSEC(500));
+				gpio_pin_set_dt(leds + MY_LEDS_WAITING, 0);
+				k_sleep(K_MSEC(500));
 			}
 			break;
 
