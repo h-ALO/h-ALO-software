@@ -1,0 +1,20 @@
+YAT-Log-20230630-131250.log
+
+No RC filter:
+0
+1µA + 60nA
+1µA + 61nA
+1µA + 60nA
+1µA + 60nA + 100pA
+1µA + 60nA
+0
+
+1µF:
+0
+1µA + 60nA
+0
+
+No RC filter:
+0
+1µA + 60nA
+0

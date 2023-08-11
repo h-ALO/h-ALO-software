@@ -4,7 +4,6 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
 
-
 #include "MCP356X.h"
 
 
@@ -121,6 +120,8 @@ typedef struct
 	uint8_t key;
 	uint32_t value;
 } egadc_regval_pair_t;
+
+
 
 
 

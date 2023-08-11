@@ -1,28 +1,18 @@
 /*
 west build -b nucleo_wb55rg
 
-*** Booting Zephyr OS build zephyr-v3.3.0-1017-g1545f9ba7f33 ***
-[00:00:00.005,000] <ESC>[0m<inf> main: Zephyr Example Application /soc/spi@40013000/examplesensor@0<ESC>[0m
-*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
-[00:00:00.005,000] <ESC>[0m<inf> main: Zephyr Example Application /soc/spi@40013000/examplesensor@0<ESC>[0m
-[00:00:00.014,000] <ESC>[0m<inf> adc_mcp356x: Setting registers in MCP356X<ESC>[0m
-[00:00:00.021,000] <ESC>[0m<inf> adc_mcp356x: Register set: MCP356X_REG_LOCK        : 000000a5 00000000<ESC>[0m
-[00:00:00.030,000] <ESC>[0m<inf> adc_mcp356x: Register set: MCP356X_REG_CFG_0       : 00000023 00000000<ESC>[0m
-
-
-
-
-*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
-*** Booting Zephyr OS build zephyr-v3.3.0-1928-g0e6c306dcec9 ***
-*** Booting Zephyr OS build zephyr-v3.3.0-2655-g9e105d203766 ***
-
-
+Timer for nucleo_wb55rg:
+https://github.com/zephyrproject-rtos/zephyr/discussions/47033
 
 */
 
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyr/drivers/counter.h>
+#include <zephyr/sys/util.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -42,13 +32,28 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 
 
+
+#define TIMER DT_NODELABEL(counters2)
+
+#if DT_NODE_HAS_STATUS(TIMER, okay)
+const struct device *const counter_dev = DEVICE_DT_GET(TIMER);
+#else
+#error "Node is disabled"
+#endif
+
+
+struct counter_alarm_cfg alarm_cfg;
+
+
 void app_print_voltage(struct mcp356x_config * c)
 {
+	// In single channel mode, any channel will be stored in channel 0:
 	int index = MCP356X_CH_CH0;
 	int32_t v_iir = MCP356X_raw_to_volt(c->raw_iir[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
 	int32_t v_min = MCP356X_raw_to_volt(c->raw_min[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
 	int32_t v_max = MCP356X_raw_to_volt(c->raw_max[index], TIABT_VREF_MICRO_VOLT, c->gain_reg);
 	int32_t v_pp = v_max - v_min;
+	printk("IRQ:%-3i DRDY:%-3i avg:%-8i min:%-8i max:%-8i pp:%-8i\n", c->num_irq, c->num_drdy, v_iir, v_min, v_max, v_pp);
 	printk("IRQ:%-3i DRDY:%-3i avg:%-8i min:%-8i max:%-8i pp:%-8i\n", c->num_irq, c->num_drdy, v_iir, v_min, v_max, v_pp);
 }
 
@@ -127,15 +132,79 @@ enum my_leds
 #define LEDS_COUNT 3
 static const struct gpio_dt_spec leds[LEDS_COUNT] = 
 {
-	GPIO_DT_SPEC_GET(DT_NODELABEL(blue_led_1), gpios),
-	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_2), gpios),
-	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_3), gpios),
+	GPIO_DT_SPEC_GET(DT_NODELABEL(blue_led_1), gpios), //Blue
+	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_2), gpios), //Green
+	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_3), gpios), //Red
 };
+
+#define DELAY 2000000
+#define ALARM_CHANNEL_ID 0
+
+
+
+
+static void test_counter_interrupt_fn(const struct device *counter_dev,
+				      uint8_t chan_id, uint32_t ticks,
+				      void *user_data)
+{
+	struct counter_alarm_cfg *config = user_data;
+	uint32_t now_ticks;
+	uint64_t now_usec;
+	int now_sec;
+	int err;
+
+	err = counter_get_value(counter_dev, &now_ticks);
+	if (err) {
+		printk("Failed to read counter value (err %d)", err);
+		return;
+	}
+
+	now_usec = counter_ticks_to_us(counter_dev, now_ticks);
+	now_sec = (int)(now_usec / USEC_PER_SEC);
+
+	printk("!!! Alarm !!!\n");
+	printk("Now: %u\n", now_sec);
+
+	/* Set a new alarm with a double length duration */
+	config->ticks = config->ticks * 2U;
+
+	printk("Set alarm in %u sec (%u ticks)\n",
+	       (uint32_t)(counter_ticks_to_us(counter_dev,
+					   config->ticks) / USEC_PER_SEC),
+	       config->ticks);
+
+	err = counter_set_channel_alarm(counter_dev, ALARM_CHANNEL_ID,
+					user_data);
+	if (err != 0) {
+		printk("Alarm could not be set\n");
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 int main(void)
 {
 	LOG_INF("Zephyr Example Application %s", "" DT_NODE_PATH(DT_NODELABEL(examplesensor0)));
+
+	
+	if (!device_is_ready(counter_dev))
+	{
+		LOG_ERR("Timer device not ready.\n");
+		return 0;
+	}
 
 	if (!spi_is_ready_dt(&c.bus))
 	{
@@ -143,15 +212,31 @@ int main(void)
 		return 0;
 	}
 
+	alarm_cfg.flags = 0;
+	alarm_cfg.ticks = counter_us_to_ticks(counter_dev, DELAY);
+	alarm_cfg.callback = test_counter_interrupt_fn;
+	alarm_cfg.user_data = &alarm_cfg;
+	printk("Set alarm in %u sec (%u ticks)\n",
+	       (uint32_t)(counter_ticks_to_us(counter_dev,
+					   alarm_cfg.ticks) / USEC_PER_SEC),
+	       alarm_cfg.ticks);
+		   
+	{
+		int err = counter_set_channel_alarm(counter_dev, ALARM_CHANNEL_ID, &alarm_cfg);
+		if (-EINVAL == err) {
+			printk("Alarm settings invalid\n");
+		} else if (-ENOTSUP == err) {
+			printk("Alarm setting request not supported\n");
+		} else if (err != 0) {
+			printk("Error\n");
+		}
+	}
+
+
 	//mybt_init();
 	//while (1){k_sleep(K_MSEC(5000));}
 
 
-	while(0)
-	{
-		LOG_INF("1");
-		k_sleep(K_MSEC(1000));
-	}
 
 
 	for(int i = 0; i < LEDS_COUNT; ++i)
@@ -160,6 +245,7 @@ int main(void)
 		if (!gpio_is_ready_dt(leds+i)) {return 0;}
 		ret = gpio_pin_configure_dt(leds+i, GPIO_OUTPUT_ACTIVE);
 		if (ret < 0) {return 0;}
+		k_sleep(K_MSEC(500));
 		ret = gpio_pin_set_dt(leds+i,1);
 		if (ret < 0) {return 0;}
 	}
@@ -193,7 +279,7 @@ int main(void)
 			{
 				//app_print_voltage_ref(&c);
 				//app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH4);
+				egadc_set_ch(&c, MCP356X_CH_CH5);
 				appstate = APP_PRINT_ADC;
 			}
 			else
