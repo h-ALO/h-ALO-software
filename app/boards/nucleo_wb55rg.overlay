@@ -30,13 +30,13 @@
 
 
 // Connect cables as following:
-// ADC PCB    cable color   ST-Nucleo-WB55RG
-// =========================================
-// ADC_CS     ---green----  (PA4,D10)
-// ADC_SCK    ---white----  (PA5,D13,20,SCK)
-// ADC_SDI    ---yellow---  (PA7,D11,22,MOSI)
-// ADC_SDO    ---gray-----  (PA6,D12,21,MISO)
-// ADC_INT    ---purple---  (PC13,D7)
+// ADC PCB |  cable color | CN10 | CN9 |ST-Nucleo-WB55RG
+// ========|==============|======|=====|======
+// ADC_CS  |  ---green----| 17   | D10 | (PA4)
+// ADC_SCK |  ---white----| 11   | D13 | (PA5,20,SCK)
+// ADC_SDI |  ---yellow---| 15   | D11 | (PA7,22,MOSI)
+// ADC_SDO |  ---gray-----| 13   | D12 | (PA6,21,MISO)
+// ADC_INT |  ---purple---| 23   | D7  | (PC13)
 
 
 

@@ -3,6 +3,7 @@ west build -b nucleo_wb55rg
 
 Timer for nucleo_wb55rg:
 https://github.com/zephyrproject-rtos/zephyr/discussions/47033
+https://github.com/zephyrproject-rtos/zephyr/blob/main/samples/drivers/counter/alarm/src/main.c
 
 */
 
@@ -33,7 +34,48 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 
 
-#define TIMER DT_NODELABEL(counters2)
+//#define TIMER DT_NODELABEL(counters2)
+
+#if defined(CONFIG_BOARD_ATSAMD20_XPRO)
+#define TIMER DT_NODELABEL(tc4)
+#elif defined(CONFIG_SOC_FAMILY_SAM)
+#define TIMER DT_NODELABEL(tc0)
+#elif defined(CONFIG_COUNTER_MICROCHIP_MCP7940N)
+#define TIMER DT_NODELABEL(extrtc0)
+#elif defined(CONFIG_COUNTER_NRF_RTC)
+#define TIMER DT_NODELABEL(rtc0)
+#elif defined(CONFIG_COUNTER_TIMER_STM32)
+#define TIMER DT_INST(0, st_stm32_counter)
+#elif defined(CONFIG_COUNTER_RTC_STM32)
+#define TIMER DT_INST(0, st_stm32_rtc)
+#elif defined(CONFIG_COUNTER_SMARTBOND_TIMER)
+#define TIMER DT_NODELABEL(timer3)
+#elif defined(CONFIG_COUNTER_NATIVE_POSIX)
+#define TIMER DT_NODELABEL(counter0)
+#elif defined(CONFIG_COUNTER_XLNX_AXI_TIMER)
+#define TIMER DT_INST(0, xlnx_xps_timer_1_00_a)
+#elif defined(CONFIG_COUNTER_TMR_ESP32)
+#define TIMER DT_NODELABEL(timer0)
+#elif defined(CONFIG_COUNTER_MCUX_CTIMER)
+#define TIMER DT_NODELABEL(ctimer0)
+#elif defined(CONFIG_COUNTER_NXP_S32_SYS_TIMER)
+#define TIMER DT_NODELABEL(stm0)
+#elif defined(CONFIG_COUNTER_TIMER_GD32)
+#define TIMER DT_NODELABEL(timer0)
+#elif defined(CONFIG_COUNTER_GECKO_RTCC)
+#define TIMER DT_NODELABEL(rtcc0)
+#elif defined(CONFIG_COUNTER_GECKO_STIMER)
+#define TIMER DT_NODELABEL(stimer0)
+#elif defined(CONFIG_COUNTER_INFINEON_CAT1)
+#define TIMER DT_NODELABEL(counter0_0)
+#elif defined(CONFIG_COUNTER_AMBIQ)
+#define TIMER DT_NODELABEL(counter0)
+#elif defined(CONFIG_COUNTER_SNPS_DW)
+#define TIMER DT_NODELABEL(timer0)
+#endif
+
+
+
 
 #if DT_NODE_HAS_STATUS(TIMER, okay)
 const struct device *const counter_dev = DEVICE_DT_GET(TIMER);
@@ -212,6 +254,8 @@ int main(void)
 		return 0;
 	}
 
+	counter_start(counter_dev);
+
 	alarm_cfg.flags = 0;
 	alarm_cfg.ticks = counter_us_to_ticks(counter_dev, DELAY);
 	alarm_cfg.callback = test_counter_interrupt_fn;
@@ -255,6 +299,13 @@ int main(void)
 		int ret = gpio_pin_set_dt(leds+i,0);
 		if (ret < 0) {return 0;}
 	}
+
+	while (1)
+	{
+		k_sleep(K_MSEC(1000));
+	}
+
+
 
 	int appstate = APP_START;
 
