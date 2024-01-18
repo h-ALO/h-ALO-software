@@ -254,8 +254,8 @@ int main(void)
 		return 0;
 	}
 
+	/*
 	counter_start(counter_dev);
-
 	alarm_cfg.flags = 0;
 	alarm_cfg.ticks = counter_us_to_ticks(counter_dev, DELAY);
 	alarm_cfg.callback = test_counter_interrupt_fn;
@@ -275,6 +275,7 @@ int main(void)
 			printk("Error\n");
 		}
 	}
+	*/
 
 
 	//mybt_init();
@@ -298,11 +299,6 @@ int main(void)
 	{
 		int ret = gpio_pin_set_dt(leds+i,0);
 		if (ret < 0) {return 0;}
-	}
-
-	while (1)
-	{
-		k_sleep(K_MSEC(1000));
 	}
 
 
@@ -330,7 +326,7 @@ int main(void)
 			{
 				//app_print_voltage_ref(&c);
 				//app_print_temperature(&c);
-				egadc_set_ch(&c, MCP356X_CH_CH5);
+				egadc_set_ch(&c, MCP356X_CH_CH3);
 				appstate = APP_PRINT_ADC;
 			}
 			else
