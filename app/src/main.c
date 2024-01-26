@@ -20,6 +20,7 @@ https://github.com/zephyrproject-rtos/zephyr/blob/main/samples/drivers/counter/a
 
 #include "app_version.h"
 #include "egadc.h"
+#include "dpot.h"
 #include "bt.h"
 
 #include <zephyr/logging/log.h>
@@ -154,14 +155,20 @@ enum app_state
 
 
 
-struct mcp356x_config c = 
-{
+struct mcp356x_config c = {
 	.bus = SPI_DT_SPEC_GET(DT_NODELABEL(examplesensor0), SPI_WORD_SET(8) | SPI_MODE_GET(0), 1),
 	.irq = GPIO_DT_SPEC_GET(DT_NODELABEL(examplesensor0), irq_gpios),
 	.is_scan = false,
 	//.gain_reg = MCP356X_CFG_2_GAIN_X_033,
 	.gain_reg = MCP356X_CFG_2_GAIN_X_1,
 };
+
+
+struct mcp45hvx1_config c1 = {
+	.bus = I2C_DT_SPEC_GET(DT_NODELABEL(dpot0))
+};
+
+
 
 enum my_leds
 {
@@ -185,9 +192,7 @@ static const struct gpio_dt_spec leds[LEDS_COUNT] =
 
 
 
-static void test_counter_interrupt_fn(const struct device *counter_dev,
-				      uint8_t chan_id, uint32_t ticks,
-				      void *user_data)
+static void test_counter_interrupt_fn(const struct device *counter_dev,uint8_t chan_id, uint32_t ticks,void *user_data)
 {
 	struct counter_alarm_cfg *config = user_data;
 	uint32_t now_ticks;
@@ -225,33 +230,31 @@ static void test_counter_interrupt_fn(const struct device *counter_dev,
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 int main(void)
 {
-	LOG_INF("Zephyr Example Application %s", "" DT_NODE_PATH(DT_NODELABEL(examplesensor0)));
+	LOG_INF("examplesensor0 %s", "" DT_NODE_PATH(DT_NODELABEL(examplesensor0)));
+	LOG_INF("dpot0 %s", "" DT_NODE_PATH(DT_NODELABEL(dpot0)));
 
 	
-	if (!device_is_ready(counter_dev))
-	{
+	if (!device_is_ready(counter_dev)) {
 		LOG_ERR("Timer device not ready.\n");
 		return 0;
 	}
 
-	if (!spi_is_ready_dt(&c.bus))
-	{
+	if (!spi_is_ready_dt(&c.bus)) {
 		LOG_ERR("SPI bus is not ready %i", 0);
 		return 0;
+	}
+
+	if (!i2c_is_ready_dt(&c1.bus)) {
+		LOG_ERR("Failed to get pointer to %s device!", c1.bus.bus->name);
+		return -EINVAL;
+	}
+
+	dpot_setup(&c1);
+
+	while(1) {
+
 	}
 
 	/*
@@ -281,7 +284,7 @@ int main(void)
 	//mybt_init();
 	//while (1){k_sleep(K_MSEC(5000));}
 
-
+	
 
 
 	for(int i = 0; i < LEDS_COUNT; ++i)
