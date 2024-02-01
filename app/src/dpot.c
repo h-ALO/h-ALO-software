@@ -23,9 +23,20 @@
 #define COM_WIPERINC        (0x04)
 #define COM_WIPERDEC        (0x08)
 
+
+char const * MCP45HVX1_REG_tostring(int a)
+{
+	switch(a)
+	{
+	case MEM_WIPER    : return "MEM_WIPER    ";
+	case MEM_TCON    : return "MEM_TCON    ";
+	default:return "";
+	}
+}
+
 void write(struct mcp45hvx1_config * config, int addr, int cmd, int value)
 {
-	printk("write : %02x %02x %02x\n", addr, cmd, value);
+	printk("write : I2C(%02X) %s %02X\n", addr, MCP45HVX1_REG_tostring(cmd & 0xF0), value);
 	uint8_t data_to_write[2]; // Data to write to the register
     data_to_write[0] = cmd;
     data_to_write[1] = value;
@@ -40,15 +51,11 @@ void write(struct mcp45hvx1_config * config, int addr, int cmd, int value)
 	printk("Error writing to register: %d\n", ret);
 	return;
 	}
-
-
-	printk("\n\n");
 }
 
 
 void test(struct mcp45hvx1_config * config, int addr, int cmd)
 {
-	printk("Reading : %02x %02x\n", addr, cmd);
 	uint8_t data_to_write = cmd; // Data to write to the register
 	uint8_t read_data[2]; // Data read from the register
 	struct i2c_msg msgs[2];
@@ -75,17 +82,20 @@ void test(struct mcp45hvx1_config * config, int addr, int cmd)
 	return;
 	}
 
+	
+	printk("read : I2C(%02X) %s : %02X %02X\n", addr, MCP45HVX1_REG_tostring(cmd & 0xF0), read_data[0], read_data[1]);
+
 	// Print the read data
-	printk("Read data from register: 0x%02X 0x%02X\n", read_data[0], read_data[1]);
-    
-	printk("\n\n");
+	//printk("Read data from register: 0x%02X 0x%02X\n", read_data[0], read_data[1]);
 }
 
 int dpot_setup(struct mcp45hvx1_config * config)
 {
+    write(config, 0x3C, MEM_TCON | COM_WRITE, TCON_R0HW | TCON_R0A | TCON_R0W);
+    //write(config, 0x3C, MEM_TCON | COM_WRITE, 0);
+    write(config, 0x3C, MEM_WIPER | COM_WRITE, 0);
     test(config, 0x3C, MEM_TCON | COM_READ);
-    write(config, 0x3C, MEM_TCON | COM_WRITE, 0xF2);
-    test(config, 0x3C, MEM_TCON | COM_READ);
+    test(config, 0x3C, MEM_WIPER | COM_READ);
 
     //test(config, 0x3C, MEM_WIPER | COM_READ);
     //test(config, 0x3D);
