@@ -1,38 +1,6 @@
 #include "dpot.h"
+#include "MCP45HVX1.h"
 
-
-#define TCON_R0HW (0x08)  // Shutdown Resistor Force
-#define TCON_R0A  (0x04)  // Terminal A Connection 
-#define TCON_R0W  (0x02)  // Wiper Connection
-#define TCON_R0B  (0x01)  // Terminal B Connection
-
-#define GCALL_TCON          (0x60)
-#define GCALL_WIPER         (0x40)
-#define GCALL_WIPERUP       (0x42)
-#define GCALL_WIPERDWN      (0x44)
-#define GCALL_COM_WRITE     (0x02)
-#define GCALL_COM_RWRITE    (0x03)
-#define GCALL_COM_WIPERINC  (0x42)
-#define GCALL_COM_WIPERDEC  (0x44)
-
-#define MEM_WIPER           (0x00)
-#define MEM_TCON            (0x40)
-
-#define COM_WRITE           (0x00)
-#define COM_READ            (0x0C)
-#define COM_WIPERINC        (0x04)
-#define COM_WIPERDEC        (0x08)
-
-
-char const * MCP45HVX1_REG_tostring(int a)
-{
-	switch(a)
-	{
-	case MEM_WIPER    : return "MEM_WIPER    ";
-	case MEM_TCON    : return "MEM_TCON    ";
-	default:return "";
-	}
-}
 
 void write(struct mcp45hvx1_config * config, int addr, int cmd, int value)
 {
@@ -91,11 +59,11 @@ void test(struct mcp45hvx1_config * config, int addr, int cmd)
 
 int dpot_setup(struct mcp45hvx1_config * config)
 {
-    write(config, 0x3C, MEM_TCON | COM_WRITE, TCON_R0HW | TCON_R0A | TCON_R0W);
+    write(config, 0x3C, MCP45HVX1_MEM_TCON | MCP45HVX1_COM_WRITE, MCP45HVX1_TCON_R0HW | MCP45HVX1_TCON_R0A | MCP45HVX1_TCON_R0W);
     //write(config, 0x3C, MEM_TCON | COM_WRITE, 0);
-    write(config, 0x3C, MEM_WIPER | COM_WRITE, 0);
-    test(config, 0x3C, MEM_TCON | COM_READ);
-    test(config, 0x3C, MEM_WIPER | COM_READ);
+    write(config, 0x3C, MCP45HVX1_MEM_WIPER | MCP45HVX1_COM_WRITE, 0);
+    test(config, 0x3C, MCP45HVX1_MEM_TCON | MCP45HVX1_COM_READ);
+    test(config, 0x3C, MCP45HVX1_MEM_WIPER | MCP45HVX1_COM_READ);
 
     //test(config, 0x3C, MEM_WIPER | COM_READ);
     //test(config, 0x3D);

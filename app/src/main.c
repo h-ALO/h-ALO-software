@@ -10,7 +10,6 @@ https://github.com/zephyrproject-rtos/zephyr/blob/main/samples/drivers/counter/a
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/sys/util.h>
