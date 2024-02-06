@@ -185,11 +185,13 @@ static const struct gpio_dt_spec leds[LEDS_COUNT] =
 	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_3), gpios), //Red
 };
 
-#define DELAY 2000000
+#define DELAY 200000
 #define ALARM_CHANNEL_ID 0
 
 
 
+static int dpot_inc = 0;
+static uint8_t pot = 0;
 
 static void test_counter_interrupt_fn(const struct device *counter_dev,uint8_t chan_id, uint32_t ticks,void *user_data)
 {
@@ -207,17 +209,16 @@ static void test_counter_interrupt_fn(const struct device *counter_dev,uint8_t c
 
 	now_usec = counter_ticks_to_us(counter_dev, now_ticks);
 	now_sec = (int)(now_usec / USEC_PER_SEC);
+	dpot_inc = 1;
+	//printk("dpot_inc %i\n", dpot_inc);
 
-	printk("!!! Alarm !!!\n");
-	printk("Now: %u\n", now_sec);
+	//printk("!!! Alarm !!!\n");
+	//printk("Now: %u\n", now_sec);
 
 	/* Set a new alarm with a double length duration */
-	config->ticks = config->ticks * 2U;
+	config->ticks = config->ticks;
 
-	printk("Set alarm in %u sec (%u ticks)\n",
-	       (uint32_t)(counter_ticks_to_us(counter_dev,
-					   config->ticks) / USEC_PER_SEC),
-	       config->ticks);
+	//printk("Set alarm in %u sec (%u ticks)\n",(uint32_t)(counter_ticks_to_us(counter_dev,config->ticks) / USEC_PER_SEC),config->ticks);
 
 	err = counter_set_channel_alarm(counter_dev, ALARM_CHANNEL_ID,
 					user_data);
@@ -252,11 +253,9 @@ int main(void)
 
 	dpot_setup(&c1);
 
-	while(1) {
 
-	}
 
-	/*
+	
 	counter_start(counter_dev);
 	alarm_cfg.flags = 0;
 	alarm_cfg.ticks = counter_us_to_ticks(counter_dev, DELAY);
@@ -277,9 +276,14 @@ int main(void)
 			printk("Error\n");
 		}
 	}
-	*/
-
-
+	
+	while(1) {
+		if(dpot_inc){
+			dpot_set(&c1, pot++);
+			dpot_inc = 0;
+		};
+		k_sleep(K_MSEC(1));
+	}
 	//mybt_init();
 	//while (1){k_sleep(K_MSEC(5000));}
 

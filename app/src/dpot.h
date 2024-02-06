@@ -7,4 +7,6 @@ struct mcp45hvx1_config {
 };
 
 
+int dpot_set(struct mcp45hvx1_config * config, int value);
+
 int dpot_setup(struct mcp45hvx1_config * config);
