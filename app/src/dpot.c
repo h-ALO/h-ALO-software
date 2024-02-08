@@ -78,6 +78,7 @@ int dpot_set(struct mcp45hvx1_config * config, int value)
 {
 	transfer(config, 0x3C, MCP45HVX1_MEM_WIPER | MCP45HVX1_COM_WRITE, value);
 	//transfer(config, 0x3C, MCP45HVX1_MEM_TCON | MCP45HVX1_COM_READ, 0);
+	return 0;
 }
 
 
@@ -116,4 +117,5 @@ int dpot_setup(struct mcp45hvx1_config * config)
     //test(config, 0x3D);
     //test(config, 0x3E);
     //test(config, 0x3F);
+	return 0;
 }

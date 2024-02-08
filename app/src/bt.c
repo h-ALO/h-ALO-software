@@ -18,18 +18,21 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adc_svc, CONFIG_APP_LOG_LEVEL);
 
-
-/*
-GATT Characteristic and Object Type | 0x2AE1 | Average Voltage
-*/
-#define BT_UUID_VOLTAGE_VAL 0x2B18
-#define BT_UUID_VOLTAGE BT_UUID_DECLARE_16(BT_UUID_VOLTAGE_VAL)
+static uint8_t ct[10];
+static uint8_t ct_update;
 
 static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,void *buf, uint16_t len, uint16_t offset)
 {
 	const uint16_t *u16 = attr->user_data;
 	uint16_t value = sys_cpu_to_le16(*u16);
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &value,sizeof(value));
+}
+
+static ssize_t write_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,void *buf, uint16_t len, uint16_t offset)
+{
+	const uint16_t *u16 = attr->user_data;
+	LOG_INF("write_u16 %i", (int)(*u16));
+	return len;
 }
 
 static struct bt_uuid_128 service1_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
@@ -47,11 +50,33 @@ static struct gatt_values values;
 
 static void ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value);
 
+
+static ssize_t write_ct(struct bt_conn *conn, const struct bt_gatt_attr *attr,const void *buf, uint16_t len, uint16_t offset,uint8_t flags)
+{
+	uint8_t *value = attr->user_data;
+	if (offset + len > sizeof(ct)) {
+		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+	}
+	memcpy(value + offset, buf, len);
+	ct_update = 1U;
+	return len;
+}
+
+static ssize_t read_ct(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset)
+{
+	const char *value = attr->user_data;
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, value,sizeof(ct));
+}
+
+
+
 BT_GATT_SERVICE_DEFINE(service1,
 	BT_GATT_PRIMARY_SERVICE(&service1_uuid),
-	BT_GATT_CHARACTERISTIC(BT_UUID_TEMPERATURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_u16, NULL, &values.voltage[0]),
+	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_V, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_u16, write_u16, &values.voltage[0]),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-	BT_GATT_CHARACTERISTIC(BT_UUID_TEMPERATURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_u16, NULL, &values.voltage[1]),
+	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_V, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_u16, write_u16, &values.voltage[1]),
+	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CHARACTERISTIC(BT_UUID_CTS_CURRENT_TIME, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,read_ct, write_ct, ct),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 );
 
@@ -123,14 +148,16 @@ static void bas_notify(void)
 	if (!battery_level) {
 		battery_level = 100U;
 	}
-	//bt_bas_set_battery_level(battery_level);
+	bt_bas_set_battery_level(battery_level);
 }
+
 
 
 
 void mybt_init(void)
 {
 	int err;
+	printk("bt_enable\n", err);
 	err = bt_enable(bt_ready);
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);

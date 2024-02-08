@@ -1,5 +1,6 @@
 /*
-west build -b nucleo_wb55rg
+west build -p -b nucleo_wb55rg
+west build -p -b esp32c3_devkitm
 
 Timer for nucleo_wb55rg:
 https://github.com/zephyrproject-rtos/zephyr/discussions/47033
@@ -185,7 +186,7 @@ static const struct gpio_dt_spec leds[LEDS_COUNT] =
 	GPIO_DT_SPEC_GET(DT_NODELABEL(green_led_3), gpios), //Red
 };
 
-#define DELAY 200000
+#define DELAY 2000000
 #define ALARM_CHANNEL_ID 0
 
 
@@ -250,7 +251,15 @@ int main(void)
 		LOG_ERR("Failed to get pointer to %s device!", c1.bus.bus->name);
 		return -EINVAL;
 	}
+	
+	mybt_init();
 
+	while(1) {
+		mybt_progress();
+		k_sleep(K_SECONDS(1));
+	}
+
+	/*
 	dpot_setup(&c1);
 
 
@@ -282,6 +291,7 @@ int main(void)
 			dpot_set(&c1, pot++);
 			dpot_inc = 0;
 		};
+		mybt_progress();
 		k_sleep(K_MSEC(1));
 	}
 	//mybt_init();
@@ -389,6 +399,7 @@ int main(void)
 
 		//k_sem_give(&c.acq_sem);
 	}
+	*/
 }
 
 
