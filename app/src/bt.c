@@ -25,6 +25,7 @@ static ssize_t read_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,vo
 {
 	const uint16_t *u16 = attr->user_data;
 	uint16_t value = sys_cpu_to_le16(*u16);
+	LOG_INF("read_u16 %i", value);
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &value,sizeof(value));
 }
 
@@ -35,8 +36,19 @@ static ssize_t write_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,v
 	return len;
 }
 
-static struct bt_uuid_128 service1_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
+//static struct bt_uuid_128 service1_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
 
+/* ST Custom Service  */
+static const struct bt_uuid_128 st_service_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
+
+/* ST LED service */
+static const struct bt_uuid_128 led_char_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe41, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+
+/* ST Notify button service */
+static const struct bt_uuid_128 but_notif_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe42, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
 
 struct gatt_values
@@ -53,7 +65,7 @@ static void ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value);
 
 static ssize_t write_ct(struct bt_conn *conn, const struct bt_gatt_attr *attr,const void *buf, uint16_t len, uint16_t offset,uint8_t flags)
 {
-	uint8_t *value = attr->user_data;
+	uint16_t *value = attr->user_data;
 	if (offset + len > sizeof(ct)) {
 		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
 	}
@@ -69,28 +81,50 @@ static ssize_t read_ct(struct bt_conn *conn, const struct bt_gatt_attr *attr, vo
 }
 
 
+//2.4.1 GATT Format Types
+#define FORMAT_FLOAT32 0x14
+#define FORMAT_SINT32 0x10
+
+// 3.5 Units
+#define UNIT_ACCELERATION 0x2713
+#define UNIT_VOLTAGE 0x2728
+#define UNIT_SECOND 0x2703
+
+static struct bt_gatt_cpf cha_format_value =
+{
+	FORMAT_SINT32, //<Enumeration key="8" value="unsigned 32-bit integer"/>
+	0x00, // exponent
+	UNIT_VOLTAGE,
+	0x01,
+	0x10f
+};
+
+
 
 BT_GATT_SERVICE_DEFINE(service1,
-	BT_GATT_PRIMARY_SERVICE(&service1_uuid),
-	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_V, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_u16, write_u16, &values.voltage[0]),
+	BT_GATT_PRIMARY_SERVICE(&st_service_uuid),
+	BT_GATT_CHARACTERISTIC(&led_char_uuid, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_u16, NULL, &values.voltage[0]),
+	BT_GATT_CUD("CH1_Voltage", BT_GATT_PERM_READ),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CPF(&cha_format_value),
+	/*
 	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_V, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_u16, write_u16, &values.voltage[1]),
+	BT_GATT_CUD("CH2_Voltage", BT_GATT_PERM_READ),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-	BT_GATT_CHARACTERISTIC(BT_UUID_CTS_CURRENT_TIME, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,read_ct, write_ct, ct),
-	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	*/
 );
 
+int simulate_temp = 0;
 static void ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	uint16_t * v = service1.attrs[0].user_data;
-	LOG_INF("ccc_cfg_changed %i", (int)(*v));
-	if (attr->user_data == &values.voltage[0])
-	{
-		LOG_INF("ccc_cfg_changed 0");
+	simulate_temp = value == BT_GATT_CCC_NOTIFY;
+	void * v = service1.attrs[1].user_data;
+	LOG_INF("ccc_cfg_changed %p %p", v, &values.voltage[0]);
+	if (v == &values.voltage[0]){
+		printk("ccc_cfg_changed 0");
 	}
-	else if (attr->user_data == &values.voltage[0])
-	{
-		LOG_INF("ccc_cfg_changed 1");
+	else if (v == &values.voltage[0]){
+		printk("ccc_cfg_changed 1");
 	}
 }
 
@@ -172,7 +206,10 @@ void mybt_progress(void)
     bas_notify();
 	values.voltage[0] += 1;
 	values.voltage[1] += 1;
-
+	if(simulate_temp) {
+		printk("bt_gatt_notify\n");
+		bt_gatt_notify(NULL, &service1.attrs[1], &values.voltage[0], sizeof(values.voltage[0]));
+	}
 	
 	//bt_gatt_notify(NULL, attr, &value, sizeof(value));
 }
