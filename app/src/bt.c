@@ -38,22 +38,33 @@ static ssize_t write_u16(struct bt_conn *conn, const struct bt_gatt_attr *attr,v
 
 //static struct bt_uuid_128 service1_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
 
-/* ST Custom Service  */
-static const struct bt_uuid_128 st_service_uuid = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
+// #define CUSTOM_UUID(val) ("2A5A20B9-" val "-4B9C-9C69-4975713E0FF2")
 
-/* ST LED service */
-static const struct bt_uuid_128 led_char_uuid = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x0000fe41, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+typedef enum varid_t {
+	VARID_SRV0,
+	VARID_SRV0_CH0,
+	VARID_SRV0_CH1,
+	VARID_SRV0_CH2,
+	VARID_SRV0_CH3,
+	VARID_SRV0_CH4,
+	VARID_SRV0_CH5,
+	VARID_SRV0_CH6,
+	VARID_SRV0_CH7,
+};
 
-/* ST Notify button service */
-static const struct bt_uuid_128 but_notif_uuid = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x0000fe42, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
-
+#define MY_UUID(x) BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x2A5A20B9, (x), 0x4B9C, 0x9C69, 0x4975713E0FF2))
+static const struct bt_uuid_128 uuid_srv0 = MY_UUID(VARID_SRV0);
+static const struct bt_uuid_128 uuid_srv0_ch0 = MY_UUID(VARID_SRV0_CH0);
+static const struct bt_uuid_128 uuid_srv0_ch1 = MY_UUID(VARID_SRV0_CH1);
+/*
+static const struct bt_uuid_128 st_service_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe40, 0xcc7a, 0x482a, 0x984a, 0x7f2ed5b3e58f));
+static const struct bt_uuid_128 led_char_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe41, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+static const struct bt_uuid_128 but_notif_uuid = BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x0000fe42, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+*/
 
 struct gatt_values
 {
-	uint16_t voltage[2];
+	int32_t voltage[2];
 	const struct bt_gatt_attr *attr[10];
 };
 
@@ -92,26 +103,27 @@ static ssize_t read_ct(struct bt_conn *conn, const struct bt_gatt_attr *attr, vo
 
 static struct bt_gatt_cpf cha_format_value =
 {
-	FORMAT_SINT32, //<Enumeration key="8" value="unsigned 32-bit integer"/>
+	FORMAT_SINT32, // 2.4.1 GATT Format Types
 	0x00, // exponent
-	UNIT_VOLTAGE,
-	0x01,
-	0x10f
+	UNIT_VOLTAGE, // 3.5.1 Units by Name
+	0x01, // 2.4.2 GATT Characteristic Presentation Format Name Space
+	0x010F // 2.4.2.1 Bluetooth SIG GATT Characteristic Presentation Format Description
 };
 
 
 
 BT_GATT_SERVICE_DEFINE(service1,
-	BT_GATT_PRIMARY_SERVICE(&st_service_uuid),
-	BT_GATT_CHARACTERISTIC(&led_char_uuid, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_u16, NULL, &values.voltage[0]),
-	BT_GATT_CUD("CH1_Voltage", BT_GATT_PERM_READ),
+	BT_GATT_PRIMARY_SERVICE(&uuid_srv0),
+	//BT_GATT_CHARACTERISTIC(&led_char_uuid, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_u16, NULL, &values.voltage[0]),
+	BT_GATT_CHARACTERISTIC(&uuid_srv0_ch0, BT_GATT_CHRC_NOTIFY, 0, NULL, NULL, &values.voltage[0]),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CUD("CH0", BT_GATT_PERM_READ),
 	BT_GATT_CPF(&cha_format_value),
-	/*
-	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_V, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_u16, write_u16, &values.voltage[1]),
-	BT_GATT_CUD("CH2_Voltage", BT_GATT_PERM_READ),
+
+	BT_GATT_CHARACTERISTIC(&uuid_srv0_ch1, BT_GATT_CHRC_NOTIFY, 0, NULL, NULL, &values.voltage[1]),
 	BT_GATT_CCC(ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-	*/
+	BT_GATT_CUD("CH1", BT_GATT_PERM_READ),
+	BT_GATT_CPF(&cha_format_value),
 );
 
 int simulate_temp = 0;
